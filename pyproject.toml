@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "squad_gps"
+version = "0.1.0"
+description = ""
+authors = ["petevdp <pjvanderpol@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python =  ">=3.11,<3.13"
+pandas = "^2.0.3"
+shell = "^1.0.1"
+httpx = "^0.24.1"
+matplotlib = "^3.7.1"
+jupyter = "^1.0.0"
+scipy = "^1.11.1"
+opencv-python = "^4.8.0.74"
+setuptools = "^68.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
