@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 
 import detect_car as dc
 import cv2
+
 plt.rcParams['figure.dpi'] = 300
 
 
@@ -18,8 +19,9 @@ def process_video(video_path):
 
     # this reads the first frame
     count = 0
-    map_name = './maps/yehorivka.png'
-    map = cv2.imread(map_name, cv2.IMREAD_COLOR)
+    map_path = './maps/map-fullsize/Yehorivka_Minimap.png'
+    map = cv2.imread(map_path, cv2.IMREAD_COLOR)
+    map_name = "yehorivka"
     map_annotated = map.copy()
 
     measurements = []
@@ -35,7 +37,9 @@ def process_video(video_path):
             continue
         print(f"reading frame {count:d}")
 
-        # this is where you put your functionality (this just saves the frame)
+        # take the right half of the image
+        image = image[:, image.shape[1] // 2:, :]
+
         location = dc.locate_car(map_name, map, image)
         # get current time in video
         if location is not None:
@@ -49,7 +53,6 @@ def process_video(video_path):
 
     # get raw name of video
     video_name = video_path.split('/')[-1].split('.')[0]
-    map_name = map_name.split('/')[-1].split('.')[0]
 
     data_filename = video_name + ".csv"
     # write to csv
@@ -71,7 +74,7 @@ def process_video(video_path):
     with open(index_path, 'w') as f:
         json.dump(index, f)
 
-    # plt.imshow(map_annotated), plt.show()
+    plt.imshow(map_annotated), plt.show()
     print(f"done writing {data_filename}")
 
 

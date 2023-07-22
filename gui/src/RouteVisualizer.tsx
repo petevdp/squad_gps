@@ -1,6 +1,8 @@
 import {createEffect, createSignal, For, onMount} from "solid-js";
 import * as L from "leaflet";
 import {parse} from "csv-parse/browser/esm/sync";
+import tailwindColors from "tailwindcss/colors";
+//@ts-ignore
 
 type ButtonColor = {
 	enabled: string;
@@ -10,6 +12,7 @@ type ButtonColor = {
 type RouteState = {
 	enabled: boolean,
 	color: ButtonColor;
+	penalty: number
 }
 
 type Measurement = {
@@ -19,23 +22,23 @@ type Measurement = {
 }
 
 const COLORS: ButtonColor[] = [
-	// "emerald"
-	// "green",
-	// "slate",
-	// "fuchsia",
-	// "amber"
-
 	{enabled: "bg-blue-500", disabled: "bg-blue-200"},
 	{enabled: "bg-green-500", disabled: "bg-green-200"},
 	{enabled: "bg-red-500", disabled: "bg-red-200"},
 	{enabled: "bg-purple-500", disabled: "bg-purple-200"},
 	{enabled: "bg-yellow-500", disabled: "bg-yellow-200"},
+	{enabled: "bg-pink-500", disabled: "bg-pink-200"},
+	{enabled: "bg-indigo-500", disabled: "bg-indigo-200"},
+	{enabled: "bg-fuchsia-500", disabled: "bg-fuchsia-200"},
+
+
 ]
 
 
 let map: L.Map | null = null;
 let mapName: string = "yehorivka";
-let renderInfos: Map<string, any> = new Map();
+let comparisonMarkerGroup = new L.LayerGroup();
+let routeLayerGroups = new Map<string, L.LayerGroup>();
 const [paths, setPaths] = createSignal(new Map<string, Measurement[]>(), {equals: false});
 const [routeEnabledState, setRouteEnabledState] = createSignal(new Map<string, RouteState>(), {equals: false});
 
@@ -49,27 +52,29 @@ async function loadCoords() {
 
 		path = preprocessPaths(path);
 
-		paths().set(routePath.split(".")[0], path)
+		const pathKey = routePath.split(".")[0]
+		if (pathKey === "pla_airfield_rush") {
+			for (let m of path) {
+				m.time += 14 * 1000;
+			}
+		}
+		paths().set(pathKey, path)
 	}
 	setPaths(paths());
 	const pathKeys = [...paths().keys()];
 
 	for (let i = 0; i < pathKeys.length; i++) {
 		const key = pathKeys[i];
-		routeEnabledState().set(key, {enabled: true, color: COLORS[i % COLORS.length]});
+		routeEnabledState().set(key, {enabled: true, color: COLORS[i % COLORS.length], penalty: 0});
 	}
-	console.log({stt: routeEnabledState(), pathKeys})
+	routeEnabledState().set("pla_airfield_rush", {...routeEnabledState().get("pla_airfield_rush")!, penalty: 10 * 1000});
 	setRouteEnabledState(routeEnabledState())
-}
-
-function preprocessData(path: Node[]) {
 }
 
 function setupMap() {
 	// remove existing map data
 	if (map !== null) {
 		map.remove();
-		renderInfos = new Map();
 	}
 
 	const bounds = [{x: 0, y: 0}, {x: 4096, y: 4096}];
@@ -142,62 +147,45 @@ function setupMap() {
 	).addTo(map);
 }
 
-export function LeafletPlanner() {
+export function RouteVisualizer() {
 	onMount(async () => {
 		setupMap();
 		await loadCoords();
 	})
 
-	let routeLayerGroups = new Map<string, L.LayerGroup>();
 	createEffect(async () => {
 		const keys = [...paths().keys()];
-		console.log(paths())
 		if (keys.length === 0 || routeEnabledState().size === 0) {
 			return;
 		}
-		console.log("drawing")
-		console.log({routeEnabledState: routeEnabledState()});
-		const INTERVAL = 1000 * 30;
+
+		const INTERVAL = 1000 * 10;
 		for (let key of keys) {
 
-			function addComparisonMarker(pathKey: string, point: L.Point) {
-				// add a comparison point to all routes on the map, keeping time constant
-
-				const path = paths().get(key)!;
-				const time = pointToInterpolatedTime(path, point);
-				if (!time) throw new Error("point not on path");
-
-				// add the point to the map for all paths
-				for (let [key, path] of paths()) {
-					const point = timeToInterpolatedPoint(path, time);
-					if (!point) continue;
-
-					let marker = L.circleMarker({lng: point.x, lat: point.y}, {pane: "routeMarkers", color: "white", fill: true, fillColor: "white", radius: 4});
-					marker.bindTooltip(`T=${time / 1000}`, {direction: "right"});
-					routeLayerGroups.get(key)!.addLayer(marker);
-				}
-			}
 
 			if (routeEnabledState().get(key)!.enabled) {
 				let routeLayerGroup = routeLayerGroups.get(key);
 				if (routeLayerGroup === undefined) {
 					routeLayerGroup = new L.LayerGroup();
-					routeLayerGroup.on("click", (e) => {
-					});
 					const start = paths().get(key)![0];
 					for (let i = 0; i < paths().get(key)!.length - 1; i++) {
 						const a = paths().get(key)![i];
 						const b = paths().get(key)![i + 1];
-						const color = routeEnabledState().get(key)!.color.enabled.split("-")[1];
+						const colorFull = routeEnabledState().get(key)!.color.enabled;
+						const color = colorFull.split("-")[1];
+						const intensity = parseInt(colorFull.split("-")[2]);
+
+						//@ts-ignore
+						const hexColor = tailwindColors[color][intensity];
 						const line = L.polyline([{lng: a.x, lat: a.y}, {lng: b.x, lat: b.y}], {
-							color: color,
+							color: hexColor,
 							pane: "routes"
 						});
 						line.on("click", (e) => {
-							addComparisonMarker(key, new L.Point(e.latlng.lng, e.latlng.lat));
+							setComparisonMarker(key, new L.Point(e.latlng.lng, e.latlng.lat));
 						})
 						routeLayerGroup.addLayer(line).addTo(map!);
-						line.bindTooltip(key, {direction: "right"});
+						// line.bindTooltip(key, {direction: "right"});
 						// check if any interval points lie between a and b
 						const intervalsSinceA = Math.floor((a.time - start.time) / INTERVAL);
 						const intervalsSinceB = Math.floor((b.time - start.time) / INTERVAL);
@@ -211,8 +199,6 @@ export function LeafletPlanner() {
 							const intervalDiffTime = (INTERVAL * (intervalsSinceA + i)) - (a.time - start.time);
 							const interpolatedX = a.x + (diffX * (intervalDiffTime / diffTime))
 							const interpolatedY = a.y + (diffY * (intervalDiffTime / diffTime))
-							console.log({a, b, diffX, diffY});
-							console.log({intervalX: interpolatedX, intervalY: interpolatedY, intervalDiffTime, diffTime});
 							let marker = L.circleMarker({lng: interpolatedX, lat: interpolatedY}, {
 								radius: 2,
 								color: "black",
@@ -245,13 +231,38 @@ export function LeafletPlanner() {
 
 }
 
+function setComparisonMarker(pathKey: string, point: L.Point) {
+	// add a comparison point to all routes on the map, keeping time constant
+	comparisonMarkerGroup.eachLayer(l => {
+		l.remove();
+	})
+
+	const path = paths().get(pathKey)!;
+	const time = pointToInterpolatedTime(path, point);
+	if (!time) throw new Error("point not on path");
+
+	// add the point to the map for all paths
+	for (let [key, path] of paths()) {
+		const point = timeToInterpolatedPoint(path, time);
+		if (!point) continue;
+
+		let marker = L.marker({lng: point.x, lat: point.y}, {
+			// pane: "routeMarkers",
+		});
+		marker.bindTooltip(`T=${time / 1000}`, {direction: "right"});
+		routeLayerGroups.get(key)!.addLayer(marker);
+		comparisonMarkerGroup.addLayer(marker);
+	}
+}
+
+
 function preprocessPaths(path: Measurement[]): Measurement[] {
 	const trimmedPaths = [];
 	let start = path[0];
 	let end = path[path.length - 1];
 	const THRESHOLD = 15;
 	trimmedPaths.push(start);
-	if (path.length == 1) return trimmedPaths;
+	if (path.length <= 1) return trimmedPaths;
 	for (let i = 1; i < path.length - 1; i++) {
 		const p = path[i];
 		const startMagnitude = Math.sqrt(Math.pow(p.x - start.x, 2) + Math.pow(p.y - start.y, 2));
@@ -267,9 +278,6 @@ function preprocessPaths(path: Measurement[]): Measurement[] {
 	return trimmedPaths;
 }
 
-
-function addComparisonPoint(pathKey: string, point: L.Point) {
-}
 
 /**
  * assumtes time is between the times from p0 and p1
@@ -316,7 +324,7 @@ function pointToInterpolatedTime(path: Measurement[], point: L.Point): number | 
 	const diffTime = segmentEnd.time - segmentStart.time;
 	const diffMagnitude = Math.sqrt(Math.pow(diffX, 2) + Math.pow(diffY, 2));
 	const pointDiffMagnitude = Math.sqrt(Math.pow(closestPoint.x - segmentStart.x, 2) + Math.pow(closestPoint.y - segmentStart.y, 2));
-	return segmentStart.time + (diffTime * (pointDiffMagnitude / diffMagnitude));
+	return Math.round(segmentStart.time + (diffTime * (pointDiffMagnitude / diffMagnitude)));
 }
 
 function Toolbar() {
@@ -325,9 +333,11 @@ function Toolbar() {
 		console.log("entries: ", [...s.entries()]);
 	})
 	return <>
+		<div class="fixed left-0 bottom-0" style="z-index: 500;">
+			<a href="/"><button class="rounded m-1 font-bold p-2 bg-gray-500">Home</button></a>
+		</div>
 		<div class="fixed right-0 top-0" style="z-index: 500;">
 			<For each={[...routeEnabledState().entries()]}>{([name, state], i) => {
-				console.log({name, ...state});
 				// put all buttons in a row
 				return (
 					<button

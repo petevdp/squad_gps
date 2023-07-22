@@ -24,6 +24,7 @@
     "csv": "^6.3.1",
     "csv-parse": "^5.4.0",
     "leaflet": "^1.9.4",
-    "solid-js": "^1.7.6"
+    "solid-js": "^1.7.6",
+    "tw-elements": "1.0.0-beta2"
   }
 }

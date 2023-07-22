@@ -19,7 +19,7 @@ def get_warped_point(image, point, M):
     return white_pixels[0][0]
 
 
-sift_cache = {}
+kp_cache = {}
 
 def locate_car(map_key, map, minimap, min_match_count=10):
     map = map.copy()
@@ -31,11 +31,11 @@ def locate_car(map_key, map, minimap, min_match_count=10):
     sift = cv2.SIFT_create()
     # find the keypoints and descriptors with SIFT
     kp1, des1 = sift.detectAndCompute(minimap, None)
-    if map_key in sift_cache:
-        kp2, des2 = sift_cache[map_key]
+    if map_key in kp_cache:
+        kp2, des2 = kp_cache[map_key]
     else:
         kp2, des2 = sift.detectAndCompute(map, None)
-        sift_cache[map_key] = (kp2, des2)
+        kp_cache[map_key] = (kp2, des2)
 
     FLANN_INDEX_KDTREE = 1
     index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
