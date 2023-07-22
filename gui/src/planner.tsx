@@ -1,8 +1,8 @@
 import * as csv from 'csv';
 import type {Component, Accessor} from "solid-js";
-import {createEffect, createSignal, For, onMount} from "solid-js";
+import {createEffect, createSignal, For, JSX, onMount} from "solid-js";
 import {parse} from "csv-parse/browser/esm/sync";
-import {measurementsToNodes} from "./Node";
+import {MapNode, measurementsToNodes} from "./MapNode";
 
 
 type ButtonColor = {
@@ -34,18 +34,18 @@ const [routeEnabledState, setRouteEnabledState] = createSignal(new Map<string, R
 const currentMap = "yehorivka";
 
 export const Planner: Component = () => {
-	const canvas = <canvas width="1500"
-												 height="1500"
-												 style="border:1px solid #000000;"></canvas>;
-	const context = canvas.getContext('2d');
+	const canvas: HTMLCanvasElement = <canvas width="1500"
+																						height="1500"
+																						style="border:1px solid #000000;"></canvas> as HTMLCanvasElement;
+	const context = canvas.getContext('2d')!;
 	const image = new Image();
-	const [paths, setPaths] = createSignal(new Map<string, Node[]>(), {equals: false});
+	const [paths, setPaths] = createSignal(new Map<string, MapNode[]>(), {equals: false});
 
 	onMount(async () => {
 		console.log("wtf")
 		image.src = `/maps/${currentMap}.png`;
 		image.onload = function () {
-			context.drawImage(image, 0, 0);
+			context!.drawImage(image, 0, 0);
 		};
 		// set canvas width and height to match image
 		canvas.width = image.width;
@@ -77,7 +77,7 @@ export const Planner: Component = () => {
 		context.drawImage(image, 0, 0);
 		for (let [key, nodes] of paths().entries()) {
 			console.log({key,nodes})
-			if (!routeEnabledState().get(key).enabled) continue;
+			if (!routeEnabledState().get(key)!.enabled) continue;
 			for (let [a, b] of nodes[0].traverseGraphEdges()) {
 				console.log({a, b})
 				context.beginPath();
