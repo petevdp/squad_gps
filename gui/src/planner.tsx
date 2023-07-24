@@ -31,7 +31,7 @@ const COLORS: ButtonColor[] = [
 
 const [routeEnabledState, setRouteEnabledState] = createSignal(new Map<string, RouteState>(), {equals: false});
 
-const currentMap = "yehorivka";
+const currentMap = "Yehorivka";
 
 export const Planner: Component = () => {
 	const canvas: HTMLCanvasElement = <canvas width="1500"

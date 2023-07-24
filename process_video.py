@@ -21,7 +21,7 @@ def process_video(video_path):
     count = 0
     map_path = './maps/map-fullsize/Yehorivka_Minimap.png'
     map = cv2.imread(map_path, cv2.IMREAD_COLOR)
-    map_name = "yehorivka"
+    map_name = "Yehorivka"
     map_annotated = map.copy()
 
     measurements = []
