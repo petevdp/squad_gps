@@ -1,8 +1,11 @@
-import {createEffect, createSignal, For} from "solid-js";
+import {createEffect, createSignal, For, onMount} from "solid-js";
 import * as L from "leaflet";
 import * as CSV from "csv-parse/browser/esm/sync";
 import tailwindColors from "tailwindcss/colors";
-//@ts-ignore
+import * as TE from "tw-elements";
+import VEHICLES from "./assets/vehicles.json"
+import FACTIONS from "./assets/factions.json"
+import {createLogger} from "vite";
 
 type ButtonColor = {
 	enabled: string;
@@ -15,13 +18,28 @@ type RouteUIState = {
 	penalty: number
 }
 
+type RouteMetadata = {
+	name: string;
+	author: string;
+	map: string;
+	category: string;
+	description: string | null;
+	submitDate: Date;
+	vehicle: string;
+}
+
+type Route = {
+	path: Measurement[];
+	metadata: RouteMetadata;
+}
+
 type Measurement = {
 	x: number;
 	y: number;
 	time: number;
 }
 
-const MapNames = [
+const MAP_NAMES = [
 	"AlBasrah",
 	"Anvil",
 	"Belaya",
@@ -29,11 +47,10 @@ const MapNames = [
 	"Chora",
 	"Fools_Road",
 	"GooseBay",
-	"Gorodok_minimap",
 	"Gorodok",
 	"Harju",
 	"Kamdesh",
-	"Kohat_minimap",
+	"Kohat",
 	"Logar_Valley",
 	"Mutaha",
 	"Narva",
@@ -65,12 +82,29 @@ const COLORS: ButtonColor[] = [
 
 // primary state, controlled by the UI
 const [mapName, setMapName] = createSignal("Yehorivka");
-const [routes, setRoutes] = createSignal<Map<string, Measurement[]> | null>(null, {equals: false});
+
+const [routes, setRoutes] = createSignal<Map<string, Route> | null>(null, {equals: false});
+const routeEntries = () => [...(routes() || new Map())!.entries()];
+
 const [routeUIState, setRouteUIState] = createSignal<Map<string, RouteUIState> | null>(null, {equals: false});
 const [comparisonMarker, setComparisonMarker] = createSignal<{
 	pathKey: string,
 	point: L.Point
 } | null>(null, {equals: false});
+const [filteredVehicles, setFilteredVehicles] = createSignal<string[]>(VEHICLES.map(v => v.name));
+const [filteredCategories, setFilteredCategories] = createSignal<string[]>([]);
+const [allRoutesEnabled, setAllRoutesEnabled] = createSignal(false);
+const categories = () => [...new Set([...(routes() || new Map())!.values()].map(r => r.metadata.category))];
+const filteredRouteEntries = () => {
+	const filteredRouteEntries: [string, Route][] = []
+	for (let [key, route] of routeEntries()) {
+		if (!filteredVehicles().includes(route.metadata.vehicle)) continue;
+		if (!filteredCategories()!.includes(route.metadata.category)) continue;
+		if (!routeUIState()?.get(key)) continue;
+		filteredRouteEntries.push([key, route]);
+	}
+	return filteredRouteEntries;
+}
 
 // intermediate state, derived from the primary state. contains the actual map data, and so on
 const S = {
@@ -82,16 +116,16 @@ const S = {
 
 export function RouteVisualizer() {
 
-	const mapElt = <div id="map" style="height: 4096px; width: 4096px"/> as HTMLDivElement;
+	const mapElt = <div id="map" style="height: 100vh; width: 100vw"/> as HTMLDivElement;
 
 	// run this effect synchronously before anything that references the map, otherwise it might be null
-	createEffect(async () => {
+	createEffect(() => {
 		setupMap(mapName(), mapElt.id);
-		await loadRoutes(mapName());
+		loadRoutes(mapName());
 	})
 
 	createEffect(async () => {
-		if (routeUIState() && routes()) updateRoutesUI(routeUIState()!, routes()!)
+		if (routeUIState() && routes()) updateRoutesUI(routeUIState()!, filteredRouteEntries(), allRoutesEnabled());
 	});
 
 	createEffect(() => {
@@ -107,25 +141,78 @@ export function RouteVisualizer() {
 
 function Toolbar() {
 	const _routeUIState = () => routeUIState() ?? new Map<string, RouteUIState>();
+	let mapSelect: HTMLSelectElement = null as unknown as HTMLSelectElement;
+	let categorySelect: HTMLSelectElement = null as unknown as HTMLSelectElement;
+	let vehicleSelect: HTMLSelectElement = null as unknown as HTMLSelectElement;
+	createEffect(() => {
+		setFilteredCategories(categories());
+	})
+
+	onMount(() => {
+		TE.initTE({Select: TE.Select})
+	})
+
+	createEffect(() => {
+		console.log({fv: filteredVehicles(), fc: filteredCategories(), frk: filteredRouteEntries(), re: routeEntries()});
+	})
 
 	return <>
 		<div class="fixed left-0 bottom-0" style="z-index: 500;">
 			<a href="/">
-				<button class="rounded m-1 font-bold p-2 bg-gray-500">Home</button>
+				<button class="rounded m-1 font-bold p-2 bg-white inset-1">Home</button>
 			</a>
+
 		</div>
-		<div class="fixed right-0 top-0 flex-col" style="z-index: 500;">
-			<For each={[..._routeUIState().entries()]}>{([name, state], i) => {
-				// put all buttons in a row
+		<div class="fixed right-0 top-0 flex flex-col bg-white rounded p-2" style="z-index: 500;">
+			<select value={mapName()} onchange={(e) => setMapName(e.currentTarget.value)} ref={mapSelect}
+							data-te-select-init
+							data-te-select-filter="true">
+				<For each={MAP_NAMES}>{(mapName) => <option value={mapName}>{mapName}</option>}</For>
+			</select>
+			<div class="flex flex-row">
+				<select onchange={(e) => {
+					setFilteredCategories([...e.currentTarget.selectedOptions].map(o => o.value))
+				}} ref={categorySelect} data-te-select-init multiple
+								data-te-select-placeholder="Category" data-te-select-filter="true">
+					<For each={categories()}>{(category) => <option value={category}>{category}</option>}</For>
+				</select>
+				<select value={mapName()} onchange={e => {
+					setFilteredVehicles([...e.currentTarget.selectedOptions].map(o => o.value))
+				}} ref={vehicleSelect}
+								data-te-select-placeholder="Vehicle"
+								data-te-select-init multiple data-te-select-filter="true">
+					<For each={VEHICLES}>{(vehicle) =>
+						<option value={vehicle.name}> {vehicle.name} </option>}
+					</For>
+				</select>
+			</div>
+			<div class={"flex flex-row"}>
+				<input
+					class="mr-2 mt-[0.3rem] h-3.5 w-8 appearance-none rounded-[0.4375rem] bg-neutral-300 before:pointer-events-none before:absolute before:h-3.5 before:w-3.5 before:rounded-full before:bg-transparent before:content-[''] after:absolute after:z-[2] after:-mt-[0.1875rem] after:h-5 after:w-5 after:rounded-full after:border-none after:bg-neutral-100 after:shadow-[0_0px_3px_0_rgb(0_0_0_/_7%),_0_2px_2px_0_rgb(0_0_0_/_4%)] after:transition-[background-color_0.2s,transform_0.2s] after:content-[''] checked:bg-primary checked:after:absolute checked:after:z-[2] checked:after:-mt-[3px] checked:after:ml-[1.0625rem] checked:after:h-5 checked:after:w-5 checked:after:rounded-full checked:after:border-none checked:after:bg-primary checked:after:shadow-[0_3px_1px_-2px_rgba(0,0,0,0.2),_0_2px_2px_0_rgba(0,0,0,0.14),_0_1px_5px_0_rgba(0,0,0,0.12)] checked:after:transition-[background-color_0.2s,transform_0.2s] checked:after:content-[''] hover:cursor-pointer focus:outline-none focus:ring-0 focus:before:scale-100 focus:before:opacity-[0.12] focus:before:shadow-[3px_-1px_0px_13px_rgba(0,0,0,0.6)] focus:before:transition-[box-shadow_0.2s,transform_0.2s] focus:after:absolute focus:after:z-[1] focus:after:block focus:after:h-5 focus:after:w-5 focus:after:rounded-full focus:after:content-[''] checked:focus:border-primary checked:focus:bg-primary checked:focus:before:ml-[1.0625rem] checked:focus:before:scale-100 checked:focus:before:shadow-[3px_-1px_0px_13px_#3b71ca] checked:focus:before:transition-[box-shadow_0.2s,transform_0.2s] dark:bg-neutral-600 dark:after:bg-neutral-400 dark:checked:bg-primary dark:checked:after:bg-primary dark:focus:before:shadow-[3px_-1px_0px_13px_rgba(255,255,255,0.4)] dark:checked:focus:before:shadow-[3px_-1px_0px_13px_#3b71ca]"
+					type="checkbox"
+					role="switch"
+					checked={allRoutesEnabled()}
+					onchange={e => setAllRoutesEnabled(!allRoutesEnabled())}
+				/>
+				<label
+					class="inline-block pl-[0.15rem] hover:cursor-pointer"
+					for="flexSwitchCheckDefault"
+				>enable all</label
+				>
+			</div>
+			<For each={filteredRouteEntries()} >{([routeKey, route]) => {
+				// a bit hacky but we indirectly depend on updates from routeUIState in the createEffect above
+				const state = _routeUIState().get(routeKey)!;
+				const enabled = () => allRoutesEnabled() || state.enabled
 				return (
 					<button
 						type="button"
 						onclick={() => {
-							_routeUIState().get(name)!.enabled = !state.enabled;
+							_routeUIState().get(routeKey)!.enabled = !state.enabled;
 							setRouteUIState(routeUIState());
 						}}
-						class={`rounded m-1 font-bold p-2 ${state.enabled ? state.color.enabled : state.color.disabled}`}>
-						{name}
+						class={`rounded mt-2 font-bold p-2 ${enabled() ? state.color.enabled : state.color.disabled}`}>
+						{routeKey}
 					</button>
 				);
 			}}</For>
@@ -139,6 +226,7 @@ function setupMap(_mapName: string, mapId: string) {
 	S.map?.remove();
 	setRouteUIState(null)
 	setRoutes(null);
+
 
 	const bounds = [{x: 0, y: 0}, {x: 4096, y: 4096}];
 
@@ -208,21 +296,22 @@ function setupMap(_mapName: string, mapId: string) {
 			bounds: baseBounds,
 		}
 	).addTo(S.map);
+	S.comparisonMarkerGroup = new L.LayerGroup();
+	S.routeLayerGroups = new Map<string, L.LayerGroup>();
 }
 
 
-function updateRoutesUI(routeUIState: Map<string, RouteUIState>, routes: Map<string, Measurement[]>) {
-	const routeKeys = [...routes.keys()];
+function updateRoutesUI(routeUIState: Map<string, RouteUIState>, filteredRoutes: [string, Route][], allEnabled: boolean) {
 	const INTERVAL = 1000 * 10;
-	for (let routeKey of routeKeys) {
-		if (routeUIState.get(routeKey)!.enabled) {
+	for (let [routeKey, route] of filteredRoutes) {
+		if (routeUIState.get(routeKey)!.enabled || allEnabled) {
 			let routeLayerGroup = S.routeLayerGroups.get(routeKey);
 			if (routeLayerGroup === undefined) {
 				routeLayerGroup = new L.LayerGroup();
-				const start = routes.get(routeKey)![0];
-				for (let i = 0; i < routes.get(routeKey)!.length - 1; i++) {
-					const a = routes.get(routeKey)![i];
-					const b = routes.get(routeKey)![i + 1];
+				const start = route.path[0];
+				for (let i = 0; i < route.path.length - 1; i++) {
+					const a = route.path[i];
+					const b = route.path[i + 1];
 					const colorFull = routeUIState.get(routeKey)!.color.enabled;
 					const color = colorFull.split("-")[1];
 					const intensity = parseInt(colorFull.split("-")[2]);
@@ -271,22 +360,23 @@ function updateRoutesUI(routeUIState: Map<string, RouteUIState>, routes: Map<str
 			S.routeLayerGroups.delete(routeKey);
 		}
 	}
+
 }
 
 // add a comparison point to all routes on the map, keeping time constant
-function renderComparisonMarkers(pathKey: string, point: L.Point, routes: Map<string, Measurement[]>) {
+function renderComparisonMarkers(pathKey: string, point: L.Point, routes: Map<string, Route>) {
 	S.comparisonMarkerGroup.eachLayer(l => {
 		l.remove();
 	})
 
-	const path = routes.get(pathKey)!;
+	const path = routes.get(pathKey)!.path;
 	const time = pointToInterpolatedTime(path, point);
 	if (!time) throw new Error("point not on path");
 
 	// add the point to the map for all paths
-	for (let [key, path] of routes) {
+	for (let [key, route] of routes) {
 		if (!routeUIState()!.get(key)!.enabled) continue;
-		const point = timeToInterpolatedPoint(path, time);
+		const point = timeToInterpolatedPoint(route.path, time);
 		if (!point) continue;
 
 		let marker = L.marker({lng: point.x, lat: point.y}, {
@@ -323,7 +413,7 @@ function preprocessPaths(path: Measurement[]): Measurement[] {
 
 
 /**
- * assumtes time is between the times from p0 and p1
+ * assumes time is between the p0 and p1 for every point in the path
  */
 function timeToInterpolatedPoint(path: Measurement[], time: number): L.Point | null {
 
@@ -372,13 +462,17 @@ function pointToInterpolatedTime(path: Measurement[], point: L.Point): number | 
 
 async function loadRoutes(mapName: string) {
 	const index = await fetch(`/data/routes/${mapName}/index.json`).then(d => d.json());
-	const _routes = new Map<string, Measurement[]>();
+	const _routes = new Map<string, Route>();
 	for (let routePath of index) {
-		const raw = await fetch(`/data/routes/${mapName}/${routePath}`).then(d => d.text());
-		// get list of objects from csv
-		let path = CSV.parse(raw, {columns: true})
-			.map((m: any) => ({x: parseInt(m.x), y: parseInt(m.y), time: parseInt(m.time)})) as Measurement[];
+		const filePath = `/data/routes/${mapName}/${routePath}`;
+		const fetchingRaw = fetch(`${filePath}.csv`).then(d => d.text());
+		const fetchingMetadata = fetch(`${filePath}.metadata.json`).then(d => d.json());
 
+		const metadata = await fetchingMetadata as RouteMetadata;
+
+		// get list of objects from csv
+		let path = CSV.parse(await fetchingRaw, {columns: true})
+			.map((m: any) => ({x: parseInt(m.x), y: parseInt(m.y), time: parseInt(m.time)})) as Measurement[];
 		path = preprocessPaths(path);
 
 		const pathKey = routePath.split(".")[0]
@@ -387,15 +481,15 @@ async function loadRoutes(mapName: string) {
 				m.time += 14 * 1000;
 			}
 		}
-		_routes.set(pathKey, path)
+		_routes.set(pathKey, {metadata, path: path})
 	}
-	setRoutes(_routes);
 	const pathKeys = [..._routes.keys()];
 	const _routeUIState = new Map<string, RouteUIState>();
 	for (let i = 0; i < pathKeys.length; i++) {
 		const key = pathKeys[i];
 		_routeUIState.set(key, {enabled: true, color: COLORS[i % COLORS.length], penalty: 0});
 	}
+	setRoutes(_routes);
 	setRouteUIState(_routeUIState)
 }
 

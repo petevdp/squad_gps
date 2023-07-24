@@ -12,5 +12,6 @@
     "noEmit": true,
     "isolatedModules": true,
 		"lib": ["DOM", "DOM.Iterable", "ESNext"],
-	},
+		"resolveJsonModule": true
+	}
 }
