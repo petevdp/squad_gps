@@ -3,7 +3,7 @@ import {render} from 'solid-js/web';
 import {Router} from "@solidjs/router"
 import './index.css';
 import "tailwindcss/tailwind.css"
-import App from './App';
+import App from './components/App';
 
 const root = document.getElementById('root');
 

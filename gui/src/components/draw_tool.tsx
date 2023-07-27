@@ -1,5 +1,5 @@
 import type {Component} from 'solid-js';
-import narvaImgPath from './assets/narva.png'
+import narvaImgPath from '../assets/narva.png'
 
 import logo from './logo.svg';
 import styles from './App.module.css';

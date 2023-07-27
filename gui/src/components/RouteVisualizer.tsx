@@ -1,11 +1,11 @@
-import {createEffect, createSignal, For, onMount} from "solid-js";
+import {batch, createEffect, createRoot, createSignal, For, onMount} from "solid-js";
 import * as L from "leaflet";
 import * as CSV from "csv-parse/browser/esm/sync";
 import tailwindColors from "tailwindcss/colors";
 import * as TE from "tw-elements";
-import VEHICLES from "./assets/vehicles.json"
-import FACTIONS from "./assets/factions.json"
-import {createLogger} from "vite";
+import VEHICLES from "../assets/vehicles.json"
+import {A} from "@solidjs/router";
+import {createStore} from "solid-js/store";
 
 type ButtonColor = {
 	enabled: string;
@@ -29,8 +29,10 @@ type RouteMetadata = {
 }
 
 type Route = {
+	name: string;
 	path: Measurement[];
 	metadata: RouteMetadata;
+	state: RouteUIState;
 }
 
 type Measurement = {
@@ -83,25 +85,22 @@ const COLORS: ButtonColor[] = [
 // primary state, controlled by the UI
 const [mapName, setMapName] = createSignal("Yehorivka");
 
-const [routes, setRoutes] = createSignal<Map<string, Route> | null>(null, {equals: false});
-const routeEntries = () => [...(routes() || new Map())!.entries()];
-
-const [routeUIState, setRouteUIState] = createSignal<Map<string, RouteUIState> | null>(null, {equals: false});
+// const [routes, setRoutes] = createSignal<Map<string, Route> | null>(null, {equals: false});
+const [routes, setRoutes] = createStore<Route[]>([])
 const [comparisonMarker, setComparisonMarker] = createSignal<{
 	pathKey: string,
 	point: L.Point
 } | null>(null, {equals: false});
-const [filteredVehicles, setFilteredVehicles] = createSignal<string[]>(VEHICLES.map(v => v.name));
-const [filteredCategories, setFilteredCategories] = createSignal<string[]>([]);
+const [filteredVehicles, setFilteredVehicles] = createStore<string[]>(VEHICLES.map(v => v.name));
+const [filteredCategories, setFilteredCategories] = createStore<string[]>([]);
 const [allRoutesEnabled, setAllRoutesEnabled] = createSignal(false);
-const categories = () => [...new Set([...(routes() || new Map())!.values()].map(r => r.metadata.category))];
+const categories = () => [...new Set((routes || []).map(r => r.metadata.category))];
 const filteredRouteEntries = () => {
-	const filteredRouteEntries: [string, Route][] = []
-	for (let [key, route] of routeEntries()) {
-		if (!filteredVehicles().includes(route.metadata.vehicle)) continue;
-		if (!filteredCategories()!.includes(route.metadata.category)) continue;
-		if (!routeUIState()?.get(key)) continue;
-		filteredRouteEntries.push([key, route]);
+	const filteredRouteEntries: Route[] = []
+	for (let route of routes) {
+		if (!filteredVehicles.includes(route.metadata.vehicle)) continue;
+		if (!filteredCategories.includes(route.metadata.category)) continue;
+		filteredRouteEntries.push(route);
 	}
 	return filteredRouteEntries;
 }
@@ -125,11 +124,24 @@ export function RouteVisualizer() {
 	})
 
 	createEffect(async () => {
-		if (routeUIState() && routes()) updateRoutesUI(routeUIState()!, filteredRouteEntries(), allRoutesEnabled());
+		if (!routes) return;
+		for (let route of routes) {
+			createRoot(dispose => {
+				createEffect(() => {
+					updateRouteUI(route.name, route, allRoutesEnabled());
+				})
+
+				createEffect(() => {
+					if (!routes.find(r => r.name === route.name)) {
+						dispose()
+					}
+				})
+			});
+		}
 	});
 
 	createEffect(() => {
-		if (comparisonMarker() && routes()) renderComparisonMarkers(comparisonMarker()!.pathKey, comparisonMarker()!.point, routes()!);
+		if (comparisonMarker() && routes) renderComparisonMarkers(comparisonMarker()!.pathKey, comparisonMarker()!.point, routes);
 	})
 
 
@@ -140,7 +152,6 @@ export function RouteVisualizer() {
 }
 
 function Toolbar() {
-	const _routeUIState = () => routeUIState() ?? new Map<string, RouteUIState>();
 	let mapSelect: HTMLSelectElement = null as unknown as HTMLSelectElement;
 	let categorySelect: HTMLSelectElement = null as unknown as HTMLSelectElement;
 	let vehicleSelect: HTMLSelectElement = null as unknown as HTMLSelectElement;
@@ -153,17 +164,18 @@ function Toolbar() {
 	})
 
 	createEffect(() => {
-		console.log({fv: filteredVehicles(), fc: filteredCategories(), frk: filteredRouteEntries(), re: routeEntries()});
+		console.log({fv: filteredVehicles, fc: filteredCategories, frk: filteredRouteEntries(), r: routes});
 	})
 
 	return <>
-		<div class="fixed left-0 bottom-0" style="z-index: 500;">
-			<a href="/">
-				<button class="rounded m-1 font-bold p-2 bg-white inset-1">Home</button>
-			</a>
-
+		<div class="absolute left-0 bottom-0 m-4" style="z-index: 500;">
+			<A
+				href="/"
+				class=" inline-block rounded bg-primary-100 px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-primary-700 transition duration-150 ease-in-out hover:bg-primary-accent-100 focus:bg-primary-accent-100 focus:outline-none focus:ring-0 active:bg-primary-accent-200">
+				Back
+			</A>
 		</div>
-		<div class="fixed right-0 top-0 flex flex-col bg-white rounded p-2" style="z-index: 500;">
+		<div class="absolute right-0 top-14 flex flex-col bg-white rounded p-2" style="z-index: 500;">
 			<select value={mapName()} onchange={(e) => setMapName(e.currentTarget.value)} ref={mapSelect}
 							data-te-select-init
 							data-te-select-filter="true">
@@ -200,19 +212,19 @@ function Toolbar() {
 				>enable all</label
 				>
 			</div>
-			<For each={filteredRouteEntries()} >{([routeKey, route]) => {
+			<For each={filteredRouteEntries()}>{(route) => {
+				if (!filteredVehicles.includes(route.metadata.vehicle)) return null;
+				if (!filteredCategories.includes(route.metadata.category)) return null;
 				// a bit hacky but we indirectly depend on updates from routeUIState in the createEffect above
-				const state = _routeUIState().get(routeKey)!;
-				const enabled = () => allRoutesEnabled() || state.enabled
+				const enabled = () => allRoutesEnabled() || route.state.enabled
 				return (
 					<button
 						type="button"
 						onclick={() => {
-							_routeUIState().get(routeKey)!.enabled = !state.enabled;
-							setRouteUIState(routeUIState());
+							setRoutes(r => r.name === route.name, "state", "enabled", enabled => !enabled);
 						}}
-						class={`rounded mt-2 font-bold p-2 ${enabled() ? state.color.enabled : state.color.disabled}`}>
-						{routeKey}
+						class={`rounded mt-2 font-bold p-2 ${enabled() ? route.state.color.enabled : route.state.color.disabled}`}>
+						{route.name}
 					</button>
 				);
 			}}</For>
@@ -224,8 +236,7 @@ function Toolbar() {
 function setupMap(_mapName: string, mapId: string) {
 	// remove existing map data
 	S.map?.remove();
-	setRouteUIState(null)
-	setRoutes(null);
+	setRoutes([]);
 
 
 	const bounds = [{x: 0, y: 0}, {x: 4096, y: 4096}];
@@ -301,81 +312,74 @@ function setupMap(_mapName: string, mapId: string) {
 }
 
 
-function updateRoutesUI(routeUIState: Map<string, RouteUIState>, filteredRoutes: [string, Route][], allEnabled: boolean) {
-	const INTERVAL = 1000 * 10;
-	for (let [routeKey, route] of filteredRoutes) {
-		if (routeUIState.get(routeKey)!.enabled || allEnabled) {
-			let routeLayerGroup = S.routeLayerGroups.get(routeKey);
-			if (routeLayerGroup === undefined) {
-				routeLayerGroup = new L.LayerGroup();
-				const start = route.path[0];
-				for (let i = 0; i < route.path.length - 1; i++) {
-					const a = route.path[i];
-					const b = route.path[i + 1];
-					const colorFull = routeUIState.get(routeKey)!.color.enabled;
-					const color = colorFull.split("-")[1];
-					const intensity = parseInt(colorFull.split("-")[2]);
+const INTERVAL = 1000 * 10;
 
-					//@ts-ignore
-					const hexColor = tailwindColors[color][intensity];
-					const line = L.polyline([{lng: a.x, lat: a.y}, {lng: b.x, lat: b.y}], {
-						color: hexColor,
-						pane: "routes"
-					});
-					line.on("click", (e) => {
-						setComparisonMarker({pathKey: routeKey, point: new L.Point(e.latlng.lng, e.latlng.lat)});
-					})
-					routeLayerGroup.addLayer(line).addTo(S.map);
-					const intervalsSinceA = Math.floor((a.time - start.time) / INTERVAL);
-					const intervalsSinceB = Math.floor((b.time - start.time) / INTERVAL);
-					if (intervalsSinceA === intervalsSinceB) continue;
+function updateRouteUI(routeKey: string, route: Route, allEnabled: boolean) {
+	let routeLayerGroup = S.routeLayerGroups.get(routeKey);
+	if ((route.state.enabled || allEnabled) && routeLayerGroup === undefined) {
+		routeLayerGroup = new L.LayerGroup();
+		const start = route.path[0];
+		for (let i = 0; i < route.path.length - 1; i++) {
+			const a = route.path[i];
+			const b = route.path[i + 1];
+			const colorFull = route.state.color.enabled
+			const color = colorFull.split("-")[1];
+			const intensity = parseInt(colorFull.split("-")[2]);
 
-					const diffX = b.x - a.x;
-					const diffY = b.y - a.y;
-					const diffTime = b.time - a.time;
+			//@ts-ignore
+			const hexColor = tailwindColors[color][intensity];
+			const line = L.polyline([{lng: a.x, lat: a.y}, {lng: b.x, lat: b.y}], {
+				color: hexColor,
+				pane: "routes"
+			});
+			line.on("click", (e) => {
+				setComparisonMarker({pathKey: routeKey, point: new L.Point(e.latlng.lng, e.latlng.lat)});
+			})
+			routeLayerGroup.addLayer(line).addTo(S.map);
+			const intervalsSinceA = Math.floor((a.time - start.time) / INTERVAL);
+			const intervalsSinceB = Math.floor((b.time - start.time) / INTERVAL);
+			if (intervalsSinceA === intervalsSinceB) continue;
 
-					for (let i = 1; i <= (intervalsSinceB - intervalsSinceA); i++) {
-						const intervalDiffTime = (INTERVAL * (intervalsSinceA + i)) - (a.time - start.time);
-						const interpolatedX = a.x + (diffX * (intervalDiffTime / diffTime))
-						const interpolatedY = a.y + (diffY * (intervalDiffTime / diffTime))
-						let marker = L.circleMarker({lng: interpolatedX, lat: interpolatedY}, {
-							radius: 2,
-							color: "black",
-							fill: true,
-							fillColor: "black",
-							pane: "routeMarkers"
-						});
-						routeLayerGroup.addLayer(marker);
-						marker.bindTooltip(`T=${INTERVAL * (intervalsSinceA + i) / 1000}`, {direction: "right"});
-					}
+			const diffX = b.x - a.x;
+			const diffY = b.y - a.y;
+			const diffTime = b.time - a.time;
 
-
-				}
-
-				S.routeLayerGroups.set(routeKey, routeLayerGroup);
+			for (let i = 1; i <= (intervalsSinceB - intervalsSinceA); i++) {
+				const intervalDiffTime = (INTERVAL * (intervalsSinceA + i)) - (a.time - start.time);
+				const interpolatedX = a.x + (diffX * (intervalDiffTime / diffTime))
+				const interpolatedY = a.y + (diffY * (intervalDiffTime / diffTime))
+				let marker = L.circleMarker({lng: interpolatedX, lat: interpolatedY}, {
+					radius: 2,
+					color: "black",
+					fill: true,
+					fillColor: "black",
+					pane: "routeMarkers"
+				});
+				routeLayerGroup.addLayer(marker);
+				marker.bindTooltip(`T=${INTERVAL * (intervalsSinceA + i) / 1000}`, {direction: "right"});
 			}
-
-		} else {
-			S.routeLayerGroups.get(routeKey)?.remove();
-			S.routeLayerGroups.delete(routeKey);
+			S.routeLayerGroups.set(routeKey, routeLayerGroup);
 		}
-	}
 
+	} else if (!route.state.enabled && !allEnabled) {
+		routeLayerGroup?.remove();
+		S.routeLayerGroups.delete(routeKey);
+	}
 }
 
-// add a comparison point to all routes on the map, keeping time constant
-function renderComparisonMarkers(pathKey: string, point: L.Point, routes: Map<string, Route>) {
+// add a comparison point to all routes on the map which keeps time constant
+function renderComparisonMarkers(pathKey: string, point: L.Point, routes: Route[]) {
 	S.comparisonMarkerGroup.eachLayer(l => {
 		l.remove();
 	})
 
-	const path = routes.get(pathKey)!.path;
+	const path = routes.find(r => r.name === pathKey)!.path;
 	const time = pointToInterpolatedTime(path, point);
 	if (!time) throw new Error("point not on path");
 
 	// add the point to the map for all paths
-	for (let [key, route] of routes) {
-		if (!routeUIState()!.get(key)!.enabled) continue;
+	for (let route of routes) {
+		if (!route.state.enabled) continue;
 		const point = timeToInterpolatedPoint(route.path, time);
 		if (!point) continue;
 
@@ -383,7 +387,7 @@ function renderComparisonMarkers(pathKey: string, point: L.Point, routes: Map<st
 			// pane: "routeMarkers",
 		});
 		marker.bindTooltip(`T=${time / 1000}`, {direction: "right"});
-		S.routeLayerGroups.get(key)!.addLayer(marker);
+		S.routeLayerGroups.get(route.name)!.addLayer(marker);
 		S.comparisonMarkerGroup.addLayer(marker);
 	}
 }
@@ -461,10 +465,9 @@ function pointToInterpolatedTime(path: Measurement[], point: L.Point): number | 
 }
 
 async function loadRoutes(mapName: string) {
-	const index = await fetch(`/data/routes/${mapName}/index.json`).then(d => d.json());
-	const _routes = new Map<string, Route>();
-	for (let routePath of index) {
-		const filePath = `/data/routes/${mapName}/${routePath}`;
+	const routeFilenames = await fetch(`/data/routes/${mapName}/index.json`).then(d => d.json()) as string[];
+	for (let i = 0; i < routeFilenames.length; i++) {
+		const filePath = `/data/routes/${mapName}/${routeFilenames[i]}`;
 		const fetchingRaw = fetch(`${filePath}.csv`).then(d => d.text());
 		const fetchingMetadata = fetch(`${filePath}.metadata.json`).then(d => d.json());
 
@@ -475,21 +478,16 @@ async function loadRoutes(mapName: string) {
 			.map((m: any) => ({x: parseInt(m.x), y: parseInt(m.y), time: parseInt(m.time)})) as Measurement[];
 		path = preprocessPaths(path);
 
-		const pathKey = routePath.split(".")[0]
-		if (pathKey === "pla_airfield_rush") {
+		if (metadata.name === "pla_airfield_rush") {
 			for (let m of path) {
 				m.time += 14 * 1000;
 			}
 		}
-		_routes.set(pathKey, {metadata, path: path})
+
+		batch(() => {
+			const state = {enabled: true, color: COLORS[i % COLORS.length], penalty: 0} satisfies  RouteUIState;
+			setRoutes([...routes, {metadata, path, state, name: metadata.name}])
+		});
 	}
-	const pathKeys = [..._routes.keys()];
-	const _routeUIState = new Map<string, RouteUIState>();
-	for (let i = 0; i < pathKeys.length; i++) {
-		const key = pathKeys[i];
-		_routeUIState.set(key, {enabled: true, color: COLORS[i % COLORS.length], penalty: 0});
-	}
-	setRoutes(_routes);
-	setRouteUIState(_routeUIState)
 }
 
