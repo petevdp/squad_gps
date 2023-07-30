@@ -6,6 +6,16 @@ export const NavBar: Component = () => {
 	onMount(() => {
 		TE.initTE({Collapse: TE.Collapse, Dropdown: TE.Dropdown});
 	})
+	const navItem = (href: string, label: string) =>
+		<li class="mb-4 lg:mb-0 lg:pr-2" data-te-nav-item-ref>
+			<A
+				class="text-neutral-500 transition duration-200 hover:text-neutral-700 hover:ease-in-out focus:text-neutral-700 disabled:text-black/30 motion-reduce:transition-none dark:text-neutral-200 dark:hover:text-neutral-300 dark:focus:text-neutral-300 lg:px-2 [&.active]:text-black/90 dark:[&.active]:text-zinc-400"
+				href={href}
+				data-te-nav-link-ref
+			>{label}</A
+			>
+		</li>;
+
 	return (<nav
 		class="flex-no-wrap relative flex w-full items-center justify-between bg-[#FBFBFB] py-2 shadow-md shadow-black/5 dark:bg-neutral-600 dark:shadow-black/10 lg:flex-wrap lg:justify-start lg:py-4"
 		data-te-navbar-ref>
@@ -48,30 +58,10 @@ export const NavBar: Component = () => {
 				<ul
 					class="list-style-none mr-auto flex flex-col pl-0 lg:flex-row"
 					data-te-navbar-nav-ref>
-					<li class="mb-4 lg:mb-0 lg:pr-2" data-te-nav-item-ref>
-						<A
-							class="text-neutral-500 transition duration-200 hover:text-neutral-700 hover:ease-in-out focus:text-neutral-700 disabled:text-black/30 motion-reduce:transition-none dark:text-neutral-200 dark:hover:text-neutral-300 dark:focus:text-neutral-300 lg:px-2 [&.active]:text-black/90 dark:[&.active]:text-zinc-400"
-							href="/route_visualizer"
-							data-te-nav-link-ref
-						>Route Viewer</A
-						>
-					</li>
-					<li class="mb-4 lg:mb-0 lg:pr-2" data-te-nav-item-ref>
-						<a
-							class="text-neutral-500 transition duration-200 hover:text-neutral-700 hover:ease-in-out focus:text-neutral-700 disabled:text-black/30 motion-reduce:transition-none dark:text-neutral-200 dark:hover:text-neutral-300 dark:focus:text-neutral-300 lg:px-2 [&.active]:text-black/90 dark:[&.active]:text-neutral-400"
-							href="/draw_tool"
-							data-te-nav-link-ref
-						>Draw Tool</a
-						>
-					</li>
-					<li class="mb-4 lg:mb-0 lg:pr-2" data-te-nav-item-ref>
-						<a
-							class="text-neutral-500 transition duration-200 hover:text-neutral-700 hover:ease-in-out focus:text-neutral-700 disabled:text-black/30 motion-reduce:transition-none dark:text-neutral-200 dark:hover:text-neutral-300 dark:focus:text-neutral-300 lg:px-2 [&.active]:text-black/90 dark:[&.active]:text-neutral-400"
-							href="/file_upload"
-							data-te-nav-link-ref
-						>Upload Recording</a
-						>
-					</li>
+					{navItem("/route_visualizer", "Route Viewer")}
+					{navItem("/draw_tool", "Draw Tool")}
+					{navItem("/routes", "Manage Routes")}
+					{navItem("/routes/new", "New Route")}
 				</ul>
 			</div>
 

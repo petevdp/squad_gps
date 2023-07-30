@@ -1,0 +1,1135 @@
+[
+  {
+    "name": "BRDM-2-Konkurs",
+    "factions": [
+      "RUS",
+      "INS",
+      "MEA",
+      "RGF",
+      "MIL"
+    ]
+  },
+  {
+    "name": "BRDM-2",
+    "factions": [
+      "RUS",
+      "IMF",
+      "INS",
+      "RGF",
+      "MIL",
+      "VDV"
+    ]
+  },
+  {
+    "name": "BM21Grad",
+    "factions": [
+      "IMF"
+    ]
+  },
+  {
+    "name": "BMP-2",
+    "factions": [
+      "IMF",
+      "RUS",
+      "MEA",
+      "RGF"
+    ]
+  },
+  {
+    "name": "Armored_Technical-Modern-M2",
+    "factions": [
+      "IMF"
+    ]
+  },
+  {
+    "name": "MTLB-ZU23-2",
+    "factions": [
+      "IMF",
+      "INS",
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "BMP-1-ZU23-2",
+    "factions": [
+      "IMF",
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Technical-Modern-UB32",
+    "factions": [
+      "IMF",
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "MTLB-VMK",
+    "factions": [
+      "IMF",
+      "RUS",
+      "RGF",
+      "MIL"
+    ]
+  },
+  {
+    "name": "T-62",
+    "factions": [
+      "IMF",
+      "INS",
+      "INS",
+      "MEA",
+      "MIL"
+    ]
+  },
+  {
+    "name": "MT-LBM-6MB",
+    "factions": [
+      "IMF",
+      "RUS",
+      "RGF",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Armored_Technical-Modern-SPG9",
+    "factions": [
+      "IMF"
+    ]
+  },
+  {
+    "name": "Armored_Technical-Modern-LOG",
+    "factions": [
+      "IMF"
+    ]
+  },
+  {
+    "name": "Ural375D-LOG",
+    "factions": [
+      "IMF",
+      "INS",
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Technical-Modern-DSHK",
+    "factions": [
+      "IMF"
+    ]
+  },
+  {
+    "name": "Armored_Technical-Modern-DSHK",
+    "factions": [
+      "IMF"
+    ]
+  },
+  {
+    "name": "Technical-Modern-M2",
+    "factions": [
+      "IMF",
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Armored_Ural375D-LOG",
+    "factions": [
+      "IMF"
+    ]
+  },
+  {
+    "name": "Tigr-M-Kord",
+    "factions": [
+      "IMF",
+      "RUS",
+      "RGF"
+    ]
+  },
+  {
+    "name": "BTR-80",
+    "factions": [
+      "IMF",
+      "RUS",
+      "INS",
+      "RGF",
+      "MIL"
+    ]
+  },
+  {
+    "name": "BMP-1",
+    "factions": [
+      "IMF",
+      "INS",
+      "INS",
+      "MEA",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Ural375D-TRAN",
+    "factions": [
+      "IMF",
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Armored_Ural375D-TRAN",
+    "factions": [
+      "IMF"
+    ]
+  },
+  {
+    "name": "Armored_Technical-Modern-TRAN",
+    "factions": [
+      "IMF"
+    ]
+  },
+  {
+    "name": "Technical-Modern-TRAN",
+    "factions": [
+      "IMF",
+      "INS"
+    ]
+  },
+  {
+    "name": "Technical-Modern-ZU23",
+    "factions": [
+      "IMF",
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Technical-Modern-LOG",
+    "factions": [
+      "IMF",
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "URAL375D-ZU23-2",
+    "factions": [
+      "IMF",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Technical-Modern-SPG9",
+    "factions": [
+      "IMF",
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Minsk400",
+    "factions": [
+      "INS",
+      "IMF",
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Technical-LOG",
+    "factions": [
+      "INS",
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "CSK131_HJ8ATGM",
+    "factions": [
+      "PLA"
+    ]
+  },
+  {
+    "name": "CSK131_QJC88_RWS",
+    "factions": [
+      "PLA",
+      "PLANMC"
+    ]
+  },
+  {
+    "name": "Z-8G",
+    "factions": [
+      "PLA"
+    ]
+  },
+  {
+    "name": "CTM131_QJY88",
+    "factions": [
+      "PLA",
+      "PLANMC"
+    ]
+  },
+  {
+    "name": "ZBL08_HJ73C",
+    "factions": [
+      "PLA",
+      "PLANMC"
+    ]
+  },
+  {
+    "name": "CSK131_QJZ89",
+    "factions": [
+      "PLA",
+      "PLANMC"
+    ]
+  },
+  {
+    "name": "ZTZ99A_CAGE",
+    "factions": [
+      "PLA"
+    ]
+  },
+  {
+    "name": "CSK131_QJY88",
+    "factions": [
+      "PLA",
+      "PLANMC"
+    ]
+  },
+  {
+    "name": "CTM131_Logistic",
+    "factions": [
+      "PLA",
+      "PLANMC"
+    ]
+  },
+  {
+    "name": "ZSL10_QJZ89",
+    "factions": [
+      "PLA",
+      "PLANMC"
+    ]
+  },
+  {
+    "name": "CTM131_QJZ89",
+    "factions": [
+      "PLA",
+      "PLANMC"
+    ]
+  },
+  {
+    "name": "ZBL-08",
+    "factions": [
+      "PLA"
+    ]
+  },
+  {
+    "name": "ZBD04A",
+    "factions": [
+      "PLA"
+    ]
+  },
+  {
+    "name": "BMD-1M",
+    "factions": [
+      "VDV"
+    ]
+  },
+  {
+    "name": "T-72B3",
+    "factions": [
+      "VDV",
+      "RUS",
+      "RGF"
+    ]
+  },
+  {
+    "name": "BTR-D_Kord",
+    "factions": [
+      "VDV"
+    ]
+  },
+  {
+    "name": "Kamaz5350-TRAN",
+    "factions": [
+      "VDV",
+      "RUS",
+      "RGF"
+    ]
+  },
+  {
+    "name": "Mi-8-PKP",
+    "factions": [
+      "VDV",
+      "RUS",
+      "RGF"
+    ]
+  },
+  {
+    "name": "BTR-MDM_PKT_RWS",
+    "factions": [
+      "VDV"
+    ]
+  },
+  {
+    "name": "BMD-4M",
+    "factions": [
+      "VDV"
+    ]
+  },
+  {
+    "name": "Kamaz5350-LOG",
+    "factions": [
+      "VDV",
+      "RUS",
+      "RGF"
+    ]
+  },
+  {
+    "name": "UH60M-M240",
+    "factions": [
+      "USA"
+    ]
+  },
+  {
+    "name": "PLA_QJZ89",
+    "factions": [
+      "RHIB"
+    ]
+  },
+  {
+    "name": "Logi",
+    "factions": [
+      "RHIB",
+      "RHIB"
+    ]
+  },
+  {
+    "name": "PLA_QJY88",
+    "factions": [
+      "RHIB"
+    ]
+  },
+  {
+    "name": "DSHK",
+    "factions": [
+      "RHIB",
+      "RHIB"
+    ]
+  },
+  {
+    "name": "Trans",
+    "factions": [
+      "RHIB",
+      "RHIB"
+    ]
+  },
+  {
+    "name": "MT-LBM-6MA",
+    "factions": [
+      "RUS",
+      "RGF"
+    ]
+  },
+  {
+    "name": "MT-LB_LOGI",
+    "factions": [
+      "RUS",
+      "RGF"
+    ]
+  },
+  {
+    "name": "BTR-82A",
+    "factions": [
+      "RUS",
+      "RGF"
+    ]
+  },
+  {
+    "name": "Tigr-M-RWS",
+    "factions": [
+      "RUS",
+      "RGF"
+    ]
+  },
+  {
+    "name": "FV510UA_CTAS40",
+    "factions": [
+      "GB"
+    ]
+  },
+  {
+    "name": "LPPV",
+    "factions": [
+      "GB",
+      "BAF"
+    ]
+  },
+  {
+    "name": "FV432-RWS",
+    "factions": [
+      "GB",
+      "BAF"
+    ]
+  },
+  {
+    "name": "FV510UA",
+    "factions": [
+      "GB",
+      "BAF"
+    ]
+  },
+  {
+    "name": "FV510",
+    "factions": [
+      "GB",
+      "BAF"
+    ]
+  },
+  {
+    "name": "LPPV-RWS",
+    "factions": [
+      "GB",
+      "BAF"
+    ]
+  },
+  {
+    "name": "FV432",
+    "factions": [
+      "GB",
+      "BAF"
+    ]
+  },
+  {
+    "name": "SA330-GPMG",
+    "factions": [
+      "GB",
+      "BAF"
+    ]
+  },
+  {
+    "name": "FV107",
+    "factions": [
+      "GB",
+      "BAF"
+    ]
+  },
+  {
+    "name": "HX60-LOG",
+    "factions": [
+      "GB",
+      "BAF",
+      "ADF",
+      "AUS"
+    ]
+  },
+  {
+    "name": "HX60-TRAN",
+    "factions": [
+      "GB",
+      "BAF",
+      "ADF",
+      "AUS"
+    ]
+  },
+  {
+    "name": "FV4034",
+    "factions": [
+      "GB",
+      "BAF"
+    ]
+  },
+  {
+    "name": "ZBD05_NoATGM",
+    "factions": [
+      "PLANMC"
+    ]
+  },
+  {
+    "name": "Z-8J",
+    "factions": [
+      "PLANMC"
+    ]
+  },
+  {
+    "name": "ZTD05",
+    "factions": [
+      "PLANMC",
+      "PLA"
+    ]
+  },
+  {
+    "name": "ZSD05_Logi",
+    "factions": [
+      "PLANMC",
+      "PLA"
+    ]
+  },
+  {
+    "name": "ZBL08",
+    "factions": [
+      "PLANMC"
+    ]
+  },
+  {
+    "name": "ZSD05_QJZ89",
+    "factions": [
+      "PLANMC",
+      "PLA"
+    ]
+  },
+  {
+    "name": "ZBD05_HJ73C",
+    "factions": [
+      "PLANMC"
+    ]
+  },
+  {
+    "name": "FV520_CTAS40",
+    "factions": [
+      "BAF"
+    ]
+  },
+  {
+    "name": "CH146-C6",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "LAV3-M2",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "Coyote",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "M113A3-TLAV",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "LUVW-M2",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "MSVS-TRAN",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "M113A3-C6",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "LAV6",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "Leopard2A6M-Cage",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "MSVS-LOG",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "CH178-C6",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "LUVW-TRAN",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "LUV-A1-TRAN",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "LUVW-C6",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "TAPV-M2",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "M113A3-M2",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "LUV-A1-LOG",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "TAPV-C6",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "Leopard2A6M",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "LAV3-C6",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "LUVW-LOG",
+    "factions": [
+      "CAF"
+    ]
+  },
+  {
+    "name": "MTLB-PKT",
+    "factions": [
+      "INS"
+    ]
+  },
+  {
+    "name": "Technical-SPG9",
+    "factions": [
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Technical-UB32",
+    "factions": [
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Technical-Dshk-Shield",
+    "factions": [
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "ArmoredTechnical-SPG9",
+    "factions": [
+      "INS"
+    ]
+  },
+  {
+    "name": "ArmoredTechnical-Dshk",
+    "factions": [
+      "INS"
+    ]
+  },
+  {
+    "name": "Ural375D-ZU23-2",
+    "factions": [
+      "INS"
+    ]
+  },
+  {
+    "name": "Technical-Modern-Dshk",
+    "factions": [
+      "INS"
+    ]
+  },
+  {
+    "name": "Technical-Dshk",
+    "factions": [
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "Technical-Modern-Mortar",
+    "factions": [
+      "INS"
+    ]
+  },
+  {
+    "name": "Technical-Modern-BMP1",
+    "factions": [
+      "INS"
+    ]
+  },
+  {
+    "name": "Technical-M1151",
+    "factions": [
+      "INS"
+    ]
+  },
+  {
+    "name": "Technical-TRAN",
+    "factions": [
+      "INS",
+      "MIL"
+    ]
+  },
+  {
+    "name": "ZBD05",
+    "factions": [
+      "PLA"
+    ]
+  },
+  {
+    "name": "Ural4320-LOG",
+    "factions": [
+      "MEA"
+    ]
+  },
+  {
+    "name": "MT-LBM-6MA-S8",
+    "factions": [
+      "MEA"
+    ]
+  },
+  {
+    "name": "Safir-MG3",
+    "factions": [
+      "MEA"
+    ]
+  },
+  {
+    "name": "T-72S",
+    "factions": [
+      "MEA"
+    ]
+  },
+  {
+    "name": "BRDM-2-S8",
+    "factions": [
+      "MEA"
+    ]
+  },
+  {
+    "name": "MT-LBM-VMK",
+    "factions": [
+      "MEA"
+    ]
+  },
+  {
+    "name": "Safir-Kord",
+    "factions": [
+      "MEA"
+    ]
+  },
+  {
+    "name": "Safir-Kornet",
+    "factions": [
+      "MEA"
+    ]
+  },
+  {
+    "name": "Safir-LOG",
+    "factions": [
+      "MEA"
+    ]
+  },
+  {
+    "name": "Ural4320-TRAN",
+    "factions": [
+      "MEA"
+    ]
+  },
+  {
+    "name": "Mi-17-MG3",
+    "factions": [
+      "MEA"
+    ]
+  },
+  {
+    "name": "MATV_CROWS_M2",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "M1151_CROWS_M2",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "M1151_M2",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "UH1Y_M240",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "M939_LOGI",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "AAVP7A1",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "M1151_M2_Open",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "UH1Y_CAS",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "MATV_TOW",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "LAV25",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "M1A1",
+    "factions": [
+      "USMC",
+      "ADF",
+      "AUS"
+    ]
+  },
+  {
+    "name": "AAVC7A1_LOGI",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "MATV_M2",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "M939_TRAN",
+    "factions": [
+      "USMC"
+    ]
+  },
+  {
+    "name": "BTR-D_Transport",
+    "factions": [
+      "VDV"
+    ]
+  },
+  {
+    "name": "BTR-ZD",
+    "factions": [
+      "VDV"
+    ]
+  },
+  {
+    "name": "BTR-DG_LOGI",
+    "factions": [
+      "VDV"
+    ]
+  },
+  {
+    "name": "Sprut-SDM1",
+    "factions": [
+      "VDV"
+    ]
+  },
+  {
+    "name": "M1126-CROWS-M2",
+    "factions": [
+      "USA"
+    ]
+  },
+  {
+    "name": "M939-LOG",
+    "factions": [
+      "USA"
+    ]
+  },
+  {
+    "name": "MATV-M2",
+    "factions": [
+      "USA"
+    ]
+  },
+  {
+    "name": "MATV-CROWS-M2",
+    "factions": [
+      "USA"
+    ]
+  },
+  {
+    "name": "MATV-M240",
+    "factions": [
+      "USA"
+    ]
+  },
+  {
+    "name": "M2A3",
+    "factions": [
+      "USA"
+    ]
+  },
+  {
+    "name": "M1A2",
+    "factions": [
+      "USA"
+    ]
+  },
+  {
+    "name": "MATV-CROWS-M240",
+    "factions": [
+      "USA"
+    ]
+  },
+  {
+    "name": "MATV-TOW",
+    "factions": [
+      "USA"
+    ]
+  },
+  {
+    "name": "M1126-M240",
+    "factions": [
+      "USA"
+    ]
+  },
+  {
+    "name": "M939-TRAN",
+    "factions": [
+      "USA"
+    ]
+  },
+  {
+    "name": "M2",
+    "factions": [
+      "RHIB"
+    ]
+  },
+  {
+    "name": "PKM",
+    "factions": [
+      "RHIB"
+    ]
+  },
+  {
+    "name": "M240",
+    "factions": [
+      "RHIB"
+    ]
+  },
+  {
+    "name": "RGF_NSV",
+    "factions": [
+      "RHIB"
+    ]
+  },
+  {
+    "name": "RUS_PKP",
+    "factions": [
+      "RHIB"
+    ]
+  },
+  {
+    "name": "RGF_PKP",
+    "factions": [
+      "RHIB"
+    ]
+  },
+  {
+    "name": "RUS_NSV",
+    "factions": [
+      "RHIB"
+    ]
+  },
+  {
+    "name": "PMV-Mag58x3",
+    "factions": [
+      "ADF",
+      "AUS"
+    ]
+  },
+  {
+    "name": "ASLAV",
+    "factions": [
+      "ADF",
+      "AUS"
+    ]
+  },
+  {
+    "name": "PMV-M2-RWS",
+    "factions": [
+      "ADF",
+      "AUS"
+    ]
+  },
+  {
+    "name": "MRH90-M240H",
+    "factions": [
+      "ADF",
+      "AUS"
+    ]
+  },
+  {
+    "name": "PMV-Mag58",
+    "factions": [
+      "ADF",
+      "AUS"
+    ]
+  },
+  {
+    "name": "UH60M-M240H",
+    "factions": [
+      "ADF",
+      "AUS"
+    ]
+  }
+]

@@ -1,7 +1,6 @@
 import numpy as np
-from matplotlib import pyplot as plt
-from scipy import spatial
 import cv2
+from logger import log
 
 DEBUG = True
 
@@ -20,6 +19,7 @@ def get_warped_point(image, point, M):
 
 
 kp_cache = {}
+
 
 def locate_car(map_key, map, minimap, min_match_count=10):
     map = map.copy()
@@ -81,7 +81,7 @@ def locate_car(map_key, map, minimap, min_match_count=10):
         draw_point(map, car_on_map, (0, 0, 255))
         return int(car_on_map[0]), int(car_on_map[1])
     else:
-        print("Not enough matches are found - {}/{}".format(len(good), min_match_count))
+        log.info("Not enough matches are found - {}/{}".format(len(good), min_match_count))
         matches_mask = None
 
 
@@ -107,7 +107,7 @@ def detect_car_in_minimap(image, x_min, x_max, y_min, y_max):
     #     x, y, w, h = cv2.boundingRect(c)
     #     cv2.rectangle(image, (x - 5, y - 5), (x + w + 10, y + h + 10), (0, 255, 0), 2)
 
-    print(f"{len(contours)} yellow regions found")
+    log.info(f"{len(contours)} yellow regions found")
     # Find the largest contour
     largest_contour = max(contours, key=cv2.contourArea)
     x, y, w, h = cv2.boundingRect(largest_contour)
