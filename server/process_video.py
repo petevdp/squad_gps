@@ -2,7 +2,6 @@
 import csv
 import sys
 import os
-from matplotlib import pyplot as plt
 import detect_car as dc
 import cv2
 
@@ -11,8 +10,6 @@ sys.path.append(file_dir)
 
 import config
 from logger import log
-
-plt.rcParams['figure.dpi'] = 300
 
 
 def process_video(map_name, video_path, segment_count=1, segment_idx=0):

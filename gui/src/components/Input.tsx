@@ -101,12 +101,13 @@ export const SelectInput: Component<SelectInputProps> = (props) => {
     onMount(() => {
         TE.initTE({Select: TE.Select});
     });
-    const optionProps = createOptions(props.options(), {filterable: true})
+    const optionProps = () => createOptions(props.options(), {filterable: true})
 
     return (
-        <Select {...optionProps} initialValue={props.control.value}
+        <Select {...optionProps()} initialValue={props.control.value}
                 onChange={value => props.control.setValue(value)} disabled={props.control.isDisabled}
-                placeholder={props.label} class={"bg-white text-black " + props.class}/>
+                placeholder={props.label} class={"bg-white text-black " + props.class}
+				/>
     )
 
     // return (

@@ -83,8 +83,9 @@ async def begin_processing(data):
                 measurements.append({"x": int(x), "y": int(y), "time": int(time)})
 
         log.info(f"extracted {len(measurements)} measurements ")
-        supabase.from_("routes").update({"path": measurements}).eq("id", route_details["id"]).execute()
-        supabase.from_("route_upload_details").update({"status": "success"}).eq("upload_id", route_upload_details_id).execute()
+        if len(measurements) > 0:
+            supabase.from_("routes").update({"path": measurements}).eq("id", route_details["id"]).execute()
+        supabase.from_("route_upload_details").update({"status": "success" if len(measurements) > 0 else "error"}).eq("upload_id", route_upload_details_id).execute()
 
 
         log.info(f"Finished processing {video_path}")

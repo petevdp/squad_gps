@@ -8,7 +8,7 @@ import {onMount} from "solid-js";
 export const DrawTool: Component = () => {
 	const canvas = <canvas onmousedown={onMouseDown} onmousemove={drawLine} oncontextmenu={onContextMenu} width="1500"
 												 height="1500"
-												 style="border:1px solid #000000;"></canvas>;
+												 style="border:1px solid #000000;"></canvas> as HTMLCanvasElement;;
 	const context = canvas.getContext('2d');
 	const image = new Image();
 
@@ -30,7 +30,6 @@ export const DrawTool: Component = () => {
 
 	function onMouseDown(event: any) {
 		if (mode === "select") {
-			console.log("drawing", {startPoint, endpoint: endPoint})
 			startPoint = getMousePosition(event);
 			appendNode(startPoint.x, startPoint.y);
 			mode = "draw";
@@ -42,7 +41,6 @@ export const DrawTool: Component = () => {
 
 	function appendNode(x: number, y: number) {
 		const newNode = new Node(Math.round(x), Math.round(y));
-		console.log("appending node", {newNode, currentNode})
 		if (currentNode) {
 			newNode.neighbors.push(currentNode);
 			currentNode.neighbors.push(newNode);

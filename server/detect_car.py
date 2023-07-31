@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import cv2
 from logger import log
 import config

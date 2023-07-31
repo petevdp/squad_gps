@@ -1,22 +1,11 @@
-import {
-	Accessor,
-	batch,
-	Component,
-	createEffect,
-	createRoot,
-	createSignal,
-	For,
-	getOwner,
-	onMount,
-	Show
-} from "solid-js";
+import {Accessor, batch, Component, createEffect, createSignal, For, getOwner, onMount, Show} from "solid-js";
 import * as L from "leaflet";
 import tailwindColors from "tailwindcss/colors";
 import {useSearchParams} from "@solidjs/router";
 import {createStore} from "solid-js/store";
 import * as SB from "../supabase";
-import {SelectInput, SwitchInput} from "./Input";
-import {createFormControl, createFormGroup, IFormControl} from "solid-forms";
+import {SelectInput} from "./Input";
+import {createFormControl, createFormGroup} from "solid-forms";
 import * as Modal from "./Modal"
 import {RouteUploadGuarded} from "./RouteUpload";
 import {Login} from "./Login";
@@ -80,14 +69,12 @@ function RouteViewer() {
 		map: createFormControl<MapName | null>(null),
 		category: createFormControl<string | null>(null),
 		vehicle: createFormControl<string | null>(null),
-		allRoutesEnabled: createFormControl(false),
 	})
 	useMapName((mapName) => searchGroup.controls.map.setValue(mapName), () => searchGroup.controls.map.value);
 	const mapName = () => searchGroup.controls.map.value;
-	const allRoutesEnabled = () => searchGroup.controls.allRoutesEnabled.value;
 
 	const {routes, setRouteEnabled} = useRoutes(mapName);
-	const {categories, vehicles, filteredRouteEntries} = useMap(mapElt.id, mapName, routes, allRoutesEnabled);
+	const {categories, vehicles, filteredRouteEntries} = useMap(mapElt.id, mapName, routes);
 
 	const owner = getOwner()!;
 	// unfortunately this signal will not directly track with the state of the modal, we just use this to show the modal
@@ -107,9 +94,63 @@ function RouteViewer() {
 			}
 		});
 	}
+	const enableAll = () => {
+		batch(() => {
+			for (let route of filteredRouteEntries()) {
+				setRouteEnabled(route.id, true);
+			}
+		});
+	}
+
+	const disableAll = () => {
+		batch(() => {
+			for (let route of filteredRouteEntries()) {
+				setRouteEnabled(route.id, false);
+			}
+		});
+	}
+
+	createEffect(() => {
+		console.log({vehicles: vehicles(), categories: categories()})
+	})
 
 	return <>
-		<div class="absolute top-2 left-14" style="z-index: 500;">
+		<div class="absolute left-2 top-2 text-sm w-[350px] max-h-[70vh] flex flex-col bg-white rounded p-2"
+				 style="z-index: 500;">
+			<div class="grid grid-cols-2 gap-1 grid-rows-2 mb-2">
+				<SelectInput class="col-span-2" control={searchGroup.controls.map} label="Map" options={() => [...MAP_NAMES]}/>
+				<SelectInput control={searchGroup.controls.category} label="Category" options={categories}/>
+				<SelectInput control={searchGroup.controls.vehicle} label="Vehicle" options={vehicles}/>
+				<div class="col-span-2 flex flex-row justify-start whitespace-nowrap">
+					<button
+						type="button"
+						onclick={invertEnabled}
+						class="col-span-2 mr-1 w-min relative inline-block rounded bg-secondary px-2 py-1 text-xs font-medium leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-secondary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-secondary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-secondary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]">
+						Invert
+					</button>
+					<button
+						type="button"
+						class="col-span-2 mr-1 w-min relative inline-block rounded bg-secondary px-2 py-1 text-xs font-medium leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-secondary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-secondary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-secondary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
+						onclick={enableAll}
+					>
+						Enable All
+					</button>
+					<button
+						type="button"
+						class="col-span-2 w-min relative inline-block rounded bg-secondary px-2 py-1 text-xs font-medium leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-secondary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-secondary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-secondary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
+						onclick={disableAll}
+					>
+						Disable All
+					</button>
+				</div>
+			</div>
+			<ul class="w-full">
+				<For each={filteredRouteEntries()}>{(route) => <RouteListItem route={route}
+																																			enabled={route.state.enabled}
+																																			toggleRouteEnabled={() => setRouteEnabled(route.id, !route.state.enabled)}/>}</For>
+			</ul>
+		</div>
+		<div class="absolute top-2 right-2" style="z-index: 500;">
 			<Show when={!SB.session()}>
 				<button
 					class="mr-2 inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
@@ -118,17 +159,16 @@ function RouteViewer() {
 			</Show>
 			<Show when={SB.session()}>
 				<button
-					class="mr-2 secondary inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
+					class="mr-2 secondary inline-block rounded bg-secondary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-secondary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-secondary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-secondary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
 					onClick={() => {
 						SB.logOut();
 					}}>Log Out
 				</button>
 				<button
 					type="button"
-					class="mr-2 inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
+					class="inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
 					style="z-index:500"
 					onclick={async () => {
-						console.log(mapElt);
 						const isLoggedIn = await Modal.ensureLoggedIn(owner, "You need to be logged in to upload a route.");
 						if (isLoggedIn) uploadModal.setVisible(true);
 					}}
@@ -138,26 +178,6 @@ function RouteViewer() {
 			</Show>
 		</div>
 		{mapElt}
-		<div class="absolute right-2 top-2 text-sm w-[300px] flex flex-col bg-white rounded p-2"
-				 style="z-index: 500;">
-			<div class="grid grid-cols-2 gap-1 grid-rows-2 mb-2">
-				<SelectInput class="col-span-2" control={searchGroup.controls.map} label="Map" options={() => [...MAP_NAMES]}/>
-				<SelectInput control={searchGroup.controls.category} label="Category" options={() => [...categories()]}/>
-				<SelectInput control={searchGroup.controls.vehicle} label="Vehicle" options={() => [...vehicles()]}/>
-				<SwitchInput control={searchGroup.controls.allRoutesEnabled} label={"Enable All"}/>
-				<button
-					type="button"
-					onclick={invertEnabled}
-					class="w-min m-auto  inline-block rounded bg-secondary px-4 pb-[4px] pt-[4px] text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-secondary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-secondary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-secondary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]">
-					Invert
-				</button>
-			</div>
-			<ul class="w-full">
-				<For each={filteredRouteEntries()}>{(route) => <RouteListItem route={route}
-																																			enabled={route.state.enabled && allRoutesEnabled()}
-																																			setEnabled={(enabled) => setRouteEnabled(route.id, enabled)}/>}</For>
-			</ul>
-		</div>
 	</>
 }
 
@@ -165,7 +185,7 @@ export const GuardedRouteViewer: Component = () => <Guarded><RouteViewer/></Guar
 
 
 type RouteListItemProps = {
-	route: Route, enabled: boolean, setEnabled: (enabled: boolean) => void
+	route: Route, enabled: boolean, toggleRouteEnabled: () => void
 }
 const RouteListItem: Component<RouteListItemProps> = (props) => {
 	const editModal = Modal.addModal({
@@ -179,7 +199,7 @@ const RouteListItem: Component<RouteListItemProps> = (props) => {
 	return (
 		<li
 			class="w-full border-b-2 cursor-pointer inset-2 p-2 hover:bg-gray-100 border-neutral-100 border-opacity-100 dark:border-opacity-50 flex flex-row justify-between"
-			onclick={() => props.setEnabled(!props.enabled)}>
+			onclick={() => props.toggleRouteEnabled()}>
 			<div class={"w-full flex flex-row border-b-2 " + borderStyle()}>
 				<span class="mr-2">{props.route.name}</span>
 				-
@@ -201,7 +221,6 @@ function useMapName(setMap: (mapName: MapName) => void, map: Accessor<MapName | 
 	const [params, setParams] = useSearchParams();
 
 	onMount(() => {
-		console.log({map: params.map});
 		// @ts-ignore
 		if (!params.map || !MAP_NAMES.includes(params.map)) {
 			setMap(MAP_NAMES[0]);
@@ -264,12 +283,14 @@ function useRoutes(mapName: Accessor<string | null>) {
 	});
 
 	const setRouteEnabled = (id: string, enabled: boolean) => {
-		setRoutes(r => r.id === id, "state", "enabled", enabled);
+		setRoutes(r => r.id === id, "state", "enabled", () => enabled);
+		console.log(routes)
 	}
 
 	return {routes, setRouteEnabled};
 }
-function useMap(mapEltId: string, mapName: Accessor<MapName | null>, routes: Route[], allRoutesEnabled: Accessor<boolean>) {
+
+function useMap(mapEltId: string, mapName: Accessor<MapName | null>, routes: Route[]) {
 
 
 	const [comparisonMarker, setComparisonMarker] = createSignal<{
@@ -277,20 +298,22 @@ function useMap(mapEltId: string, mapName: Accessor<MapName | null>, routes: Rou
 		point: L.Point
 	} | null>(null, {equals: false});
 
+	const categories = () => [...new Set((routes).map(r => r.metadata.category))];
+	const vehicles = () => [...new Set((routes).map(r => r.metadata.vehicle))];
 	const [filteredVehicles, setFilteredVehicles] = createStore<string[]>([]);
 
 	const [filteredCategories, setFilteredCategories] = createStore<string[]>([]);
 
 	createEffect(() => {
+		console.log({categories: categories()})
 		setFilteredCategories(categories());
 	})
 
 	createEffect(() => {
+		console.log({vehicles: vehicles()});
 		setFilteredVehicles(vehicles());
 	})
 
-	const categories = () => [...new Set((routes).map(r => r.metadata.category))];
-	const vehicles = () => [...new Set((routes).map(r => r.metadata.vehicle))];
 	const filteredRouteEntries = () => {
 		const filteredRouteEntries: UploadedRoute[] = []
 		for (let route of routes) {
@@ -356,7 +379,7 @@ function useMap(mapEltId: string, mapName: Accessor<MapName | null>, routes: Rou
 			boxZoom: true,
 			scrollWheelZoom: true,
 			touchZoom: true,
-			zoomControl: true,
+			zoomControl: false,
 			doubleClickZoom: false,
 			attributionControl: false,
 		});
@@ -389,11 +412,11 @@ function useMap(mapEltId: string, mapName: Accessor<MapName | null>, routes: Rou
 	}
 
 
-	function updateRouteUI(route: Route, allEnabled: boolean) {
+	function updateRouteUI(route: Route) {
 		const INTERVAL = 1000 * 10;
 		let routeLayerGroup = S.routeLayerGroups.get(route.id);
 		routeLayerGroup?.remove();
-		if ((route.state.enabled || allEnabled) && route.path) {
+		if ((route.state.enabled) && route.path) {
 			routeLayerGroup = new L.LayerGroup();
 			const start = route.path[0];
 			for (let i = 0; i < route.path.length - 1; i++) {
@@ -477,7 +500,7 @@ function useMap(mapEltId: string, mapName: Accessor<MapName | null>, routes: Rou
 	createEffect(async () => {
 		for (let route of routes) {
 			if (route.path === null) continue;
-			updateRouteUI(route as UploadedRoute, allRoutesEnabled());
+			updateRouteUI(route as UploadedRoute);
 		}
 	});
 

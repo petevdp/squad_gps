@@ -24,12 +24,10 @@
     "@solidjs/router": "^0.8.2",
     "@supabase/supabase-js": "^2.31.0",
     "@thisbeyond/solid-select": "^0.14.0",
-    "csv": "^6.3.1",
-    "csv-parse": "^5.4.0",
+    "highlight.run": "^7.3.11",
     "leaflet": "^1.9.4",
     "solid-forms": "^0.4.8",
     "solid-js": "^1.7.6",
-    "solid-modal": "^0.1.4",
     "tus-js-client": "^3.1.0",
     "tw-elements": "1.0.0-beta2"
   }

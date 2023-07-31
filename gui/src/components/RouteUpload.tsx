@@ -231,7 +231,7 @@ function useRouteUpload(routeToEdit: Route | undefined, map: string, finish: () 
 			return;
 		}
 		const upload = new tus.Upload(_fileDetails.file, {
-			endpoint: `http://localhost:54321/storage/v1/upload/resumable`,
+			endpoint: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/upload/resumable`,
 			retryDelays: [0, 3000, 5000, 10000, 20000],
 			headers: {
 				authorization: `Bearer ${SB.session()!.access_token}`,

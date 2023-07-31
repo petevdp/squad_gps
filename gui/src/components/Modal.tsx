@@ -28,9 +28,6 @@ export function ModalContainer() {
 	onCleanup(() => {
 		modalContainer?.remove();
 		modalContainer = null;
-	})
-	createEffect(() => {
-		console.log({element: activeElement()});
 	});
 	return <div
 		ref={modalContainer!}

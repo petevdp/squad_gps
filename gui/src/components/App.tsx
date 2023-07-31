@@ -5,33 +5,37 @@ import {GuardedRouteViewer as RouteViewer} from "./RouteViewer";
 import {LoginPage} from "./Login";
 import {ModalContainer} from "./Modal";
 import {RoutesTableGuarded as RoutesTable} from "./RoutesTable";
-
+import {H} from 'highlight.run';
+import {onMount} from "solid-js";
 
 const App: Component = () => {
-    return (<>
-            <ModalContainer/>
-            <Routes>
-                <Route path="/" element={<Navigate href={'route_viewer'}/>}/>
-                <Route path="draw_tool" component={DrawTool}/>
-                <Route path="route_viewer" component={RouteViewer}/>
-                <Route path="/routes" component={RoutesTable}/>
-                <Route path="/login" component={() => <LoginPage />}/>
-            </Routes>
-        </>
-    );
-}
-
-const MainMenu: Component = () => {
-    return (<>
-        <div class="grid place-items-center font-bold text-xl">
-            <ul class="m-auto h-3/5">
-                <li><A href="/login">Login</A></li>
-                <li><A href="/draw_tool">Draw Tool</A></li>
-                <li><A href="/route_viewer">Route Visualizer</A></li>
-                <li><A href="/routes"/>Your Routes</li>
-                <li><A href="/routes/new">New Route</A></li>
-            </ul>
-        </div>
-    </>);
+	const productkey = import.meta.env.VITE_HIGHLIGHT_PRODUCT_KEY;
+	onMount(() => {
+		H.init(productkey, { // Get your project ID from https://app.highlight.io/setup
+			environment: 'production',
+			version: 'commit:' + import.meta.env.VITE_GIT_COMMIT_HASH,
+			networkRecording: {
+				enabled: true,
+				recordHeadersAndBody: true,
+				urlBlocklist: [
+					// insert full or partial urls that you don't want to record here
+					// Out of the box, Highlight will not record these URLs (they can be safely removed):
+					"https://www.googleapis.com/identitytoolkit",
+					"https://securetoken.googleapis.com",
+				],
+			},
+		});
+	});
+	return (<>
+			<ModalContainer/>
+			<Routes>
+				<Route path="/" element={<Navigate href={'route_viewer'}/>}/>
+				<Route path="draw_tool" component={DrawTool}/>
+				<Route path="route_viewer" component={RouteViewer}/>
+				<Route path="/routes" component={RoutesTable}/>
+				<Route path="/login" component={() => <LoginPage/>}/>
+			</Routes>
+		</>
+	);
 }
 export default App;

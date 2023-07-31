@@ -1,9 +1,6 @@
 import logging
 import os
-import sys
 import config
-import structlog
-from pythonjsonlogger import jsonlogger
 
 
 logging.basicConfig(filename=os.path.join(config.LOGS_DIR, "server.log"),

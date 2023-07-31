@@ -7,23 +7,20 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python =  ">=3.11,<3.13"
-pandas = "^2.0.3"
-shell = "^1.0.1"
-matplotlib = "^3.7.1"
-jupyter = "^1.0.0"
-scipy = "^1.11.1"
 setuptools = "^68.0.0"
-flask = "^2.3.2"
 supabase = "^1.0.3"
-ffmpeg-python = "^0.2.0"
 fastapi = "^0.100.0"
 uvicorn = "^0.23.1"
-structlog = "^23.1.0"
 opencv-python-headless = "^4.8.0.74"
 
 
 [tool.poetry.dev-dependencies]
+jupyter = "^1.0.0"
+scipy = "^1.11.1"
 opencv-python = "^4.8.0.74"
+pandas = "^2.0.3"
+shell = "^1.0.1"
+matplotlib = "^3.7.1"
 
 [build-system]
 requires = ["poetry-core"]

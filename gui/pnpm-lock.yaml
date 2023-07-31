@@ -10,12 +10,9 @@ dependencies:
   '@thisbeyond/solid-select':
     specifier: ^0.14.0
     version: 0.14.0(solid-js@1.7.6)
-  csv:
-    specifier: ^6.3.1
-    version: 6.3.1
-  csv-parse:
-    specifier: ^5.4.0
-    version: 5.4.0
+  highlight.run:
+    specifier: ^7.3.11
+    version: 7.3.11
   leaflet:
     specifier: ^1.9.4
     version: 1.9.4
@@ -25,9 +22,6 @@ dependencies:
   solid-js:
     specifier: ^1.7.6
     version: 1.7.6
-  solid-modal:
-    specifier: ^0.1.4
-    version: 0.1.4
   tus-js-client:
     specifier: ^3.1.0
     version: 3.1.0
@@ -1155,28 +1149,6 @@ packages:
   /csstype@3.1.2:
     resolution: {integrity: sha512-I7K1Uu0MBPzaFKg4nI5Q7Vs2t+3gWWW648spaF+Rg7pI9ds18Ugn+lvg4SHczUdKlHI5LWBXyqfS8+DufyBsgQ==}
 
-  /csv-generate@4.2.6:
-    resolution: {integrity: sha512-VtnYqhWLcsUocA346ewFOk+rrqcoT663j11vXzD2uelXq9WguQ3QzDeVD8ISso7hhVtkDSHcWl9psdemeiEHDA==}
-    dev: false
-
-  /csv-parse@5.4.0:
-    resolution: {integrity: sha512-JiQosUWiOFgp4hQn0an+SBoV9IKdqzhROM0iiN4LB7UpfJBlsSJlWl9nq4zGgxgMAzHJ6V4t29VAVD+3+2NJAg==}
-    dev: false
-
-  /csv-stringify@6.4.0:
-    resolution: {integrity: sha512-HQsw0QXiN5fdlO+R8/JzCZnR3Fqp8E87YVnhHlaPtNGJjt6ffbV0LpOkieIb1x6V1+xt878IYq77SpXHWAqKkA==}
-    dev: false
-
-  /csv@6.3.1:
-    resolution: {integrity: sha512-ZTcWLvr0Ux0IQDz/QzhCToBVIZtF5GDrStMt9I8mRSk0jPnfF9OeYKz0EZTspaAEOK6hf515ag97nKmwoyU8ZA==}
-    engines: {node: '>= 0.1.90'}
-    dependencies:
-      csv-generate: 4.2.6
-      csv-parse: 5.4.0
-      csv-stringify: 6.4.0
-      stream-transform: 3.2.6
-    dev: false
-
   /custom-error-instance@2.1.1:
     resolution: {integrity: sha512-p6JFxJc3M4OTD2li2qaHkDCw9SfMw82Ldr6OC9Je1aXiGfhx2W8p3GaoeaGrPJTUN9NirTM/KTxHWMUdR1rsUg==}
     dev: false
@@ -1395,6 +1367,10 @@ packages:
     engines: {node: '>= 0.4.0'}
     dependencies:
       function-bind: 1.1.1
+
+  /highlight.run@7.3.11:
+    resolution: {integrity: sha512-ThX7dSkLWhV9Pa+BlEVUiDzWVWjUwKT+kyoTGwVtgO4hMTsrTdamnFvJ0h5BGFku1y9JTRy8hiOXkxegLn1iPA==}
+    dev: false
 
   /html-entities@2.3.3:
     resolution: {integrity: sha512-DV5Ln36z34NNTDgnz0EWGBLZENelNAtkiFA4kyNOG2tDI6Mz1uSWiq1wAKdyjnJwyDiDO7Fa2SO1CTxPXL8VxA==}
@@ -1868,10 +1844,6 @@ packages:
       csstype: 3.1.2
       seroval: 0.5.1
 
-  /solid-modal@0.1.4:
-    resolution: {integrity: sha512-W8EdnBoGNm6FYvNlFa3UY41+EqtQV9de8ryWQbloTNNC2ijazbORt48QRiggOt6z0niJedsU0cPyN5/YTcBvFQ==}
-    dev: false
-
   /solid-refresh@0.5.3(solid-js@1.7.6):
     resolution: {integrity: sha512-Otg5it5sjOdZbQZJnvo99TEBAr6J7PQ5AubZLNU6szZzg3RQQ5MX04oteBIIGDs0y2Qv8aXKm9e44V8z+UnFdw==}
     peerDependencies:
@@ -1886,10 +1858,6 @@ packages:
   /source-map-js@1.0.2:
     resolution: {integrity: sha512-R0XvVJ9WusLiqTCEiGCmICCMplcCkIwwR11mOSD9CR5u+IXYdiseeEuXCVAjS54zqwkLcPNnmU4OeJ6tUrWhDw==}
     engines: {node: '>=0.10.0'}
-
-  /stream-transform@3.2.6:
-    resolution: {integrity: sha512-/pyOvaCQFqYTmrFhmMbnAEVo3SsTx1H39eUVPOtYeAgbEUc+rDo7GoP8LbHJgU83mKtzJe/7Nq/ipaAnUOHgJQ==}
-    dev: false
 
   /sucrase@3.33.0:
     resolution: {integrity: sha512-ARGC7vbufOHfpvyGcZZXFaXCMZ9A4fffOGC5ucOW7+WHDGlAe8LJdf3Jts1sWhDeiI1RSWrKy5Hodl+JWGdW2A==}
