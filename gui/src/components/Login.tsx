@@ -1,4 +1,4 @@
-import {Component, createSignal, JSXElement, onMount, ParentProps, Show} from "solid-js";
+import {Component, createSignal, JSXElement, mergeProps, onMount, ParentProps, Show} from "solid-js";
 import * as SB from "../supabase";
 import {logIn, setSession} from "../supabase";
 import {A, useNavigate} from "@solidjs/router";
@@ -13,11 +13,12 @@ export type LoginProps = {
 } & CanPrompt<boolean>;
 
 
-export const LoginPage: Component<LoginProps> = (props) => {
+export const LoginPage: Component  = () => {
+    const navigate = useNavigate();
     return (<section class="h-screen grid place-items-center">
         <div class="g-6 flex h-full flex-wrap items-center justify-center  min-w-[800px]">
             <div class="mb-12 md:mb-0 md:w-8/12 lg:w-5/12 xl:w-5/12">
-                <Login {...props} />
+                <Login onCompleted={() => navigate("/")} />
             </div>
         </div>
     </section>);

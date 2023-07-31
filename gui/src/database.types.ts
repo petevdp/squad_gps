@@ -9,6 +9,37 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      route_upload_details: {
+        Row: {
+          created_at: string
+          original_filename: string
+          route_id: string
+          status: string
+          upload_id: string
+        }
+        Insert: {
+          created_at?: string
+          original_filename: string
+          route_id: string
+          status?: string
+          upload_id: string
+        }
+        Update: {
+          created_at?: string
+          original_filename?: string
+          route_id?: string
+          status?: string
+          upload_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_upload_details_route_id_fkey"
+            columns: ["route_id"]
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       routes: {
         Row: {
           author: string
@@ -18,9 +49,7 @@ export interface Database {
           map_name: string
           name: string
           path: Json | null
-          upload_complete: boolean
           vehicle: string
-          video_path: string
         }
         Insert: {
           author: string
@@ -30,9 +59,7 @@ export interface Database {
           map_name: string
           name: string
           path?: Json | null
-          upload_complete?: boolean
           vehicle: string
-          video_path: string
         }
         Update: {
           author?: string
@@ -42,9 +69,7 @@ export interface Database {
           map_name?: string
           name?: string
           path?: Json | null
-          upload_complete?: boolean
           vehicle?: string
-          video_path?: string
         }
         Relationships: [
           {

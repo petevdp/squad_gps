@@ -1,6 +1,8 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import cv2
 from logger import log
+import config
 
 DEBUG = True
 
@@ -62,15 +64,17 @@ def locate_car(map_key, map, minimap, min_match_count=10):
         y_min = int(np.min(inliers_src[:, 0, 1]))
         y_max = int(np.max(inliers_src[:, 0, 1]))
 
-        # pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
-        # dst = cv2.perspectiveTransform(pts, M)
-        # map = cv2.polylines(map, [np.int32(dst)], True, (0, 255, 0,), 3, cv2.LINE_AA)
-        # draw_params = dict(matchColor=(0, 255, 0),  # draw matches in green color
-        #                    singlePointColor=None,
-        #                    matchesMask=matches_mask,  # draw only inliers
-        #                    flags=2)
+        if config.DEBUG:
+            pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
+            dst = cv2.perspectiveTransform(pts, M)
+            map = cv2.polylines(map, [np.int32(dst)], True, (0, 255, 0,), 3, cv2.LINE_AA)
+            draw_params = dict(matchColor=(0, 255, 0),  # draw matches in green color
+                               singlePointColor=None,
+                               matchesMask=matches_mask,  # draw only inliers
+                               flags=2)
 
-        # img3 = cv2.drawMatches(minimap, kp1, map, kp2, good, None, **draw_params)
+            img3 = cv2.drawMatches(minimap, kp1, map, kp2, good, None, **draw_params)
+            cv2.imshow('matches', img3), plt.show()
 
         car = detect_car_in_minimap(minimap, x_min, x_max, y_min, y_max)
         if car is None:
@@ -81,7 +85,7 @@ def locate_car(map_key, map, minimap, min_match_count=10):
         draw_point(map, car_on_map, (0, 0, 255))
         return int(car_on_map[0]), int(car_on_map[1])
     else:
-        log.info("Not enough matches are found - {}/{}".format(len(good), min_match_count))
+        log.info(f"Not enough matches are found - {len(good)}/{min_match_count}")
         matches_mask = None
 
 
@@ -99,19 +103,12 @@ def detect_car_in_minimap(image, x_min, x_max, y_min, y_max):
 
     # Find contours of the yellow regions
     contours, _ = cv2.findContours(yellow_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
+    log.info(f"%s yellow regions found", len(contours))
     if len(contours) == 0:
         return None
-    # for c in contours:
-    #     # Draw a rectangle around the largest contour
-    #     x, y, w, h = cv2.boundingRect(c)
-    #     cv2.rectangle(image, (x - 5, y - 5), (x + w + 10, y + h + 10), (0, 255, 0), 2)
-
-    log.info(f"{len(contours)} yellow regions found")
     # Find the largest contour
     largest_contour = max(contours, key=cv2.contourArea)
     x, y, w, h = cv2.boundingRect(largest_contour)
 
     center = (x + w // 2, y + h // 2)
-    # plt.imshow(image), plt.show()
     return np.array(center)

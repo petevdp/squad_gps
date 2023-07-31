@@ -3,7 +3,7 @@ import {createSignal} from "solid-js";
 import {Database} from "./database.types";
 
 
-export const client = createClient<Database>("http://localhost:54321", "public-anon-key")
+export const client = createClient<Database>(import.meta.env!.VITE_SUPABASE_URL as string, import.meta.env!.VITE_SUPABASE_KEY as string);
 export const [session, setSession] = createSignal(null as Session | null);
 
 

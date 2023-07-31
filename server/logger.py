@@ -1,5 +1,12 @@
 import logging
+import os
 import sys
+import config
+import structlog
+from pythonjsonlogger import jsonlogger
 
-logging.basicConfig(filename='logs/process_video.log', encoding='utf-8', level=logging.DEBUG)
-log = logging.getLogger(__name__ + "_" + sys.argv[3])
+
+logging.basicConfig(filename=os.path.join(config.LOGS_DIR, "server.log"),
+                    level=logging.DEBUG if config.DEBUG else logging.INFO)
+
+log = logging.getLogger()
