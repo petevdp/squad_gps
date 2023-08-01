@@ -6,15 +6,14 @@ import tempfile
 from fastapi import FastAPI, Request, HTTPException
 from supabase import create_client, Client
 
-from server.shared import ProcessVideoArgs
-
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
 
+from shared import ProcessVideoArgs
 from logger import log
 import config
 
-supabase: Client = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
+supabase: Client = create_client(config.SUPABASE_URL, config.SUPABASE_SERVICE_KEY)
 
 app = FastAPI()
 

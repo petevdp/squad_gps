@@ -1,7 +1,6 @@
 FROM python:3.11.1
 RUN mkdir /app
 RUN mkdir /maps
-RUN mkdir /logs
 RUN mkdir /downloads
 COPY . /app
 

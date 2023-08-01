@@ -12,6 +12,7 @@ supabase = "^1.0.3"
 fastapi = "^0.100.0"
 uvicorn = "^0.23.1"
 opencv-python-headless = "^4.8.0.74"
+structlog = "^23.1.0"
 
 
 [tool.poetry.dev-dependencies]
