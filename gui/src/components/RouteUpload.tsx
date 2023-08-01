@@ -58,7 +58,7 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 	const {progress, startFileUpload, group, deleteRoute, onSubmit} = useRouteUpload(props.routeToEdit, props.map, props.closeModal);
 
 	//@ts-ignore
-	const [categories] = createResource(() => SB.client.from("categories").select("category")
+	const [categories] = createResource(() => SB.sb.from("categories").select("category")
 		.then(res => res.data?.map(c => c?.category)?.sort()));
 	const categoriesWithNew = () => (categories() ? ["New Category", ...categories()!] : []) as string[];
 
@@ -202,7 +202,7 @@ function useRouteUpload(routeToEdit: Route | undefined, map: string, finish: () 
 	}, {required: true});
 
 	onMount(async () => {
-		routeInsertChannel = SB.client.channel("route-upload-channel").on('postgres_changes', {
+		routeInsertChannel = SB.sb.channel("route-upload-channel").on('postgres_changes', {
 			event: 'UPDATE',
 			schema: 'public',
 			table: 'route_upload_details',
@@ -221,7 +221,7 @@ function useRouteUpload(routeToEdit: Route | undefined, map: string, finish: () 
 		const _fileDetails = fileDetails();
 		if (!_fileDetails) return;
 		const uploadPath = `${uploadId}.mp4`
-		const {data, error} = await SB.client.from("route_upload_details").insert({
+		const {data, error} = await SB.sb.from("route_upload_details").insert({
 			route_id: _fileDetails.routeId,
 			upload_id: uploadId,
 			original_filename: _fileDetails.file.name
@@ -290,7 +290,7 @@ function useRouteUpload(routeToEdit: Route | undefined, map: string, finish: () 
 		const category = group.controls.category.value === "New Category" ? group.controls.newCategory.value : group.controls.category.value;
 
 		if (routeToEdit) {
-			const {data: route, error} = await SB.client.from("routes").update({
+			const {data: route, error} = await SB.sb.from("routes").update({
 				name: group.controls.name.value,
 				map_name: group.controls.map.value,
 				category: category,
@@ -301,7 +301,7 @@ function useRouteUpload(routeToEdit: Route | undefined, map: string, finish: () 
 				return;
 			}
 		} else {
-			const {error} = await SB.client
+			const {error} = await SB.sb
 				.from('routes')
 				.insert([
 					{
@@ -338,7 +338,7 @@ function useRouteUpload(routeToEdit: Route | undefined, map: string, finish: () 
 		if (!routeToEdit) return;
 		await Modal.prompt(owner!, null, (_props) => <ConfirmDelete routeName={routeToEdit!.name}
 																																onCompleted={_props.onCompleted}/>);
-		const {data, error} = await SB.client.from("routes").delete().eq("id", routeToEdit.id);
+		const {data, error} = await SB.sb.from("routes").delete().eq("id", routeToEdit.id);
 		if (error) {
 			alert(error.message);
 			return;

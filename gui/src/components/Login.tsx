@@ -55,6 +55,7 @@ export const Login: Component<LoginProps> = (props) => {
             </Show>
             <TextInput control={group.controls.email} label="Email" type="email"/>
             <TextInput control={group.controls.password} label="Password" type="password"/>
+						<A href="/forgot_password" class="mb-2 self-end text-sm text-primary hover:underline">Forgot password?</A>
 
             <button
                 type="submit"

@@ -243,7 +243,7 @@ function useRoutes(mapName: Accessor<string | null>) {
 		const _mapName = mapName();
 		if (mapName === null) return;
 
-		const {data: routeRecords, error} = await SB.client.from("routes")
+		const {data: routeRecords, error} = await SB.sb.from("routes")
 			.select("*")
 			.eq("map_name", _mapName)
 
@@ -257,7 +257,7 @@ function useRoutes(mapName: Accessor<string | null>) {
 
 
 		if (routeInsertChannel) await routeInsertChannel.unsubscribe();
-		routeInsertChannel = SB.client.channel("routes-update-channel").on('postgres_changes', {
+		routeInsertChannel = SB.sb.channel("routes-update-channel").on('postgres_changes', {
 			event: '*',
 			schema: 'public',
 			table: 'routes',

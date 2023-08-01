@@ -4,9 +4,14 @@ import {Database} from "./database.types";
 import {H} from 'highlight.run';
 
 
-export const client = createClient<Database>(import.meta.env!.VITE_SUPABASE_URL as string, import.meta.env!.VITE_SUPABASE_KEY as string);
+export const sb = createClient<Database>(import.meta.env!.VITE_SUPABASE_URL as string, import.meta.env!.VITE_SUPABASE_KEY as string);
 export const [session, setSession] = createSignal(null as Session | null);
 
+sb.auth.onAuthStateChange((event, session) => {
+	if (session) {
+		setSession(session);
+	}
+});
 
 createRoot(() => {
 	createEffect(() => {
@@ -18,20 +23,10 @@ createRoot(() => {
 	})
 })
 
-setInterval(async () => {
-    const {data, error} = await client.auth.refreshSession();
-    if (error) {
-        console.error(error)
-        return
-    }
-    setSession(data.session);
-}, 1000 * 60 * 5);
-
 
 export const logIn = async (email: string, password: string) => {
-    const {data, error} = await client.auth.signInWithPassword({email: email, password: password});
+    const {data, error} = await sb.auth.signInWithPassword({email: email, password: password});
     if (error) {
-        alert(error)
         return error
     } else {
         setSession(data.session);
@@ -39,10 +34,15 @@ export const logIn = async (email: string, password: string) => {
     }
 }
 
+export const updatePassword = async (password: string) => {
+	const {error, data} = await sb.auth.updateUser({password: password});
+	setSession((await sb.auth.getSession()).data.session);
+	if (error) {
+		return error;
+	}
+}
+
 export const logOut = async () => {
-    await client.auth.signOut();
+    await sb.auth.signOut();
     setSession(null);
 }
-client.auth.getSession().then(async s => {
-    setSession(s.data.session)
-})

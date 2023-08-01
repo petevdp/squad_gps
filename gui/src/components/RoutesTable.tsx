@@ -8,7 +8,7 @@ const RoutesTable: Component = () => {
 
 	const [routes, setRoutes] = createSignal<DbRoute[]>([]);
 	onMount(async () => {
-		const {data: _routes, error} = await SB.client.from("routes").select("*").eq("author", SB.session()!.user.id);
+		const {data: _routes, error} = await SB.sb.from("routes").select("*").eq("author", SB.session()!.user.id);
 		if (error) {
 			console.error(error);
 			return;
