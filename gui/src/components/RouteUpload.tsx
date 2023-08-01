@@ -399,7 +399,7 @@ function useRouteUpload(
 		}
 	}
 
-	const deleteRoute = async () => {
+	async function deleteRoute() {
 		if (!routeToEdit) return
 		await Modal.prompt(
 			owner!,
