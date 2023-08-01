@@ -1,9 +1,12 @@
 import asyncio
 import os
 import sys
+import tempfile
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from supabase import create_client, Client
+
+from server.shared import ProcessVideoArgs
 
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
@@ -13,21 +16,20 @@ import config
 
 supabase: Client = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
 
-NUM_PARTS = 4
 app = FastAPI()
 
 
 @app.post('/process_video')
 async def process(request: Request):
     if request.headers.get("Authorization") != f'Bearer {config.SHARED_SECRET_KEY}':
-        return {"error": "Invalid auth token"}, 401
+        raise HTTPException(status_code=401, detail="Invalid auth token")
     log.info("Received request")
     event = await request.json()
     if event is None:
-        return {"error": "Invalid JSON data"}, 400
+        raise HTTPException(status_code=400, detail="Invalid JSON data")
 
     if event["type"] != "INSERT" or event["record"]["bucket_id"] != "route_uploads":
-        return {"error": "Invalid event type"}, 400
+        raise HTTPException(status_code=400, detail="Invalid event type")
 
     asyncio.create_task(begin_processing(event))
 
@@ -39,18 +41,32 @@ process_video_lock = asyncio.Semaphore(1)
 
 async def begin_processing(event):
     async with process_video_lock:
-        await process_video(event)
+        with tempfile.TemporaryDirectory(prefix="squad_gps") as tempdir:
+            await process_video(event, tempdir)
+            pass
 
 
-async def process_video(data):
+async def process_video(data, tempdir):
     video_path = None
+    route_upload_details_id = None
     try:
-        bytes = supabase.storage.from_("route_uploads").download(data["record"]["name"])
+        # for some reason the download isn't completed by the time the webhook is called sometimes
+        for i in range(20):
+            try:
+                bytes = supabase.storage.from_("route_uploads").download(data["record"]["name"])
+                break
+            except Exception as e:
+                log.exception(e)
+                log.info(f"trying again in 1s (attempt {i})")
+                await asyncio.sleep(1)
+        else:
+            raise HTTPException(status_code=500, detail="Failed to download video")
+
         route_upload_details_id = os.path.basename(data["record"]["name"]).split(".")[0]
         upload_details = supabase.from_("route_upload_details").select("*").eq("upload_id",
                                                                                route_upload_details_id).execute()
         if not upload_details.data:
-            return {"error": "Route does not exist"}, 400
+            raise HTTPException(status_code=404, detail="Upload details not found")
 
         upload_details = upload_details.data[0]
 
@@ -68,26 +84,28 @@ async def process_video(data):
         script_path = os.path.join(os.path.dirname(__file__), "process_video.py")
 
         tasks = []
-        for i in range(NUM_PARTS):
-            tasks.append(
-                asyncio.create_subprocess_shell(
-                    " ".join([script_path, map_name, video_path, str(NUM_PARTS), str(i)]),
-                    stdout=asyncio.subprocess.PIPE
-                ))
+        outfiles = []
+        for i in range(config.NUM_PROCESSES):
+            filepath = os.path.join(tempdir, f"out_{i}.csv")
+            sp_args = [script_path, *ProcessVideoArgs(map_name, video_path, str(i), filepath)]
+            tasks.append(asyncio.create_subprocess_shell(" ".join(sp_args)))
+            outfiles.append(filepath)
 
         procs = await asyncio.gather(*tasks)
-        outputs = await asyncio.gather(*[proc.communicate() for proc in procs])
-        decoded_outputs = [output[0].decode() for output in outputs]
+
+        await asyncio.gather(*[proc.wait() for proc in procs])
 
         measurements = []
         # parse outputs as csv
-        for output in decoded_outputs:
-            for line in output.strip().split("\n")[1:]:
-                line = line.strip()
-                if not line:
-                    continue
-                x, y, time = line.split(',')
-                measurements.append({"x": int(x), "y": int(y), "time": int(time)})
+        for outfile in outfiles:
+            with open(outfile, "r") as f:
+                output = f.read()
+                for line in output.strip().split("\n"):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    x, y, time = line.split(',')
+                    measurements.append({"x": int(x), "y": int(y), "time": int(time)})
 
         log.info(f"extracted {len(measurements)} measurements ")
         if len(measurements) > 0:
@@ -97,9 +115,10 @@ async def process_video(data):
 
         log.info(f"Finished processing {video_path}")
     except Exception as e:
-        log.error(e)
-        supabase.from_("route_upload_details").update({"status": "error"}).eq("upload_id",
-                                                                              route_upload_details_id).execute()
+        log.exception(e)
+        if route_upload_details_id:
+            supabase.from_("route_upload_details").update({"status": "error"}).eq("upload_id",
+                                                                                  route_upload_details_id).execute()
     finally:
         if video_path is not None:
             os.remove(video_path)

@@ -7,3 +7,4 @@ MAPS_DIR = os.environ.get("MAPS_DIR")
 DOWNLOADS_DIR = os.environ.get("DOWNLOADS_DIR")
 DEBUG = os.environ.get("DEBUG") == "True"
 SHARED_SECRET_KEY = os.environ.get("SHARED_SECRET_KEY")
+NUM_PROCESSES = 4
