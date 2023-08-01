@@ -1,21 +1,31 @@
-import {Accessor, batch, Component, createEffect, createSignal, For, getOwner, onMount, Show} from "solid-js";
-import * as L from "leaflet";
-import tailwindColors from "tailwindcss/colors";
-import {useSearchParams} from "@solidjs/router";
-import {createStore} from "solid-js/store";
-import * as SB from "../supabase";
-import {SelectInput} from "./Input";
-import {createFormControl, createFormGroup} from "solid-forms";
-import * as Modal from "./Modal"
-import {RouteUploadGuarded} from "./RouteUpload";
-import {Login} from "./Login";
-import {Guarded} from "./Guarded";
-import {RealtimeChannel} from "@supabase/supabase-js";
-import {DbRoute, MAP_NAMES, MapName} from "../types";
+import {
+	Accessor,
+	batch,
+	Component,
+	createEffect,
+	createSignal,
+	For,
+	getOwner,
+	onMount,
+	Show,
+} from 'solid-js'
+import * as L from 'leaflet'
+import tailwindColors from 'tailwindcss/colors'
+import { useSearchParams } from '@solidjs/router'
+import { createStore } from 'solid-js/store'
+import * as SB from '../supabase'
+import { SelectInput } from './Input'
+import { createFormControl, createFormGroup } from 'solid-forms'
+import * as Modal from './Modal'
+import { RouteUploadGuarded } from './RouteUpload'
+import { Login } from './Login'
+import { Guarded } from './Guarded'
+import { RealtimeChannel } from '@supabase/supabase-js'
+import { DbRoute, MAP_NAMES, MapName } from '../types'
 
 type ButtonColor = {
-	enabled: string;
-	disabled: string;
+	enabled: string
+	disabled: string
 }
 
 type RouteUIState = {
@@ -336,27 +346,29 @@ function useMap(mapEltId: string, mapName: Accessor<MapName | null>, routes: Rou
 
 	function setupMap(_mapName: string, mapId: string) {
 		// remove existing map data
-		S.map?.remove();
+		S.map?.remove()
 
-
-		const bounds = [{x: 0, y: 0}, {x: 4096, y: 4096}];
+		const bounds = [
+			{ x: 0, y: 0 },
+			{ x: 4096, y: 4096 },
+		]
 
 		const baseBounds = [
 			[bounds[0].y, bounds[0].x],
 			[bounds[1].y, bounds[1].x],
-		] as [[number, number], [number, number]];
+		] as [[number, number], [number, number]]
 
-		const width = Math.abs(bounds[0].x - bounds[1].x);
-		const height = Math.abs(bounds[0].y - bounds[1].y);
+		const width = Math.abs(bounds[0].x - bounds[1].x)
+		const height = Math.abs(bounds[0].y - bounds[1].y)
 
-		const up_left_x = Math.min(bounds[0].x, bounds[1].x);
-		const up_left_y = Math.min(bounds[0].y, bounds[1].y);
+		const up_left_x = Math.min(bounds[0].x, bounds[1].x)
+		const up_left_y = Math.min(bounds[0].y, bounds[1].y)
 
-		const zoomOffset = 0;
-		let tileSize = 256;
+		const zoomOffset = 0
+		let tileSize = 256
 
-		const x_stretch = tileSize / width;
-		const y_stretch = tileSize / height;
+		const x_stretch = tileSize / width
+		const y_stretch = tileSize / height
 
 		const crs = L.extend({}, L.CRS.Simple, {
 			// Move origin to upper left corner of map
@@ -367,7 +379,7 @@ function useMap(mapEltId: string, mapName: Accessor<MapName | null>, routes: Rou
 				y_stretch,
 				-up_left_y * y_stretch
 			),
-		});
+		})
 
 		S.map = L.map(mapId, {
 			crs: crs,
@@ -382,33 +394,35 @@ function useMap(mapEltId: string, mapName: Accessor<MapName | null>, routes: Rou
 			zoomControl: false,
 			doubleClickZoom: false,
 			attributionControl: false,
-		});
+		})
 
-		S.map.fitBounds(baseBounds);
-		S.map.createPane("routes");
-		S.map.getPane("routes")!.style.zIndex = "10";
-		S.map.createPane("routeMarkers");
-		S.map.getPane("routeMarkers")!.style.zIndex = "11";
+		S.map.fitBounds(baseBounds)
+		S.map.createPane('routes')
+		S.map.getPane('routes')!.style.zIndex = '10'
+		S.map.createPane('routeMarkers')
+		S.map.getPane('routeMarkers')!.style.zIndex = '11'
 
+		S.map.createPane('background')
+		S.map.getPane('background')!.style.zIndex = '0'
 
-		S.map.createPane("background");
-		S.map.getPane("background")!.style.zIndex = "0";
-
+		// https://zxyydvtjfwtliqnhfrtt.supabase.co/storage/v1/object/public/map_tiles/map-tiles/Fools_Road_Minimap/0/0/0.png
 		new L.TileLayer(
-			`/maps/map-tiles/${_mapName}_Minimap/{z}/{x}/{y}.png`,
+			`${
+				import.meta.env.VITE_SUPABASE_URL
+			}/storage/v1/object/public/map_tiles/map-tiles/${_mapName}_Minimap/{z}/{x}/{y}.png`,
 			{
 				tms: false,
 				maxNativeZoom: 4,
 				zoomOffset: zoomOffset,
 				// scale tiles to match minimap width and height
 				tileSize: tileSize,
-				pane: "background",
+				pane: 'background',
 				// @ts-ignore
 				bounds: baseBounds,
 			}
-		).addTo(S.map);
-		S.comparisonMarkerGroup = new L.LayerGroup();
-		S.routeLayerGroups = new Map<string, L.LayerGroup>();
+		).addTo(S.map)
+		S.comparisonMarkerGroup = new L.LayerGroup()
+		S.routeLayerGroups = new Map<string, L.LayerGroup>()
 	}
 
 

@@ -1,5 +1,4 @@
 import asyncio
-import json
 import os
 import sys
 
@@ -18,25 +17,32 @@ NUM_PARTS = 4
 app = FastAPI()
 
 
-process_video_lock = asyncio.Semaphore(1)
-
-@app.post('/process')
+@app.post('/process_video')
 async def process(request: Request):
+    if request.headers.get("Authorization") != f'Bearer {config.SHARED_SECRET_KEY}':
+        return {"error": "Invalid auth token"}, 401
     log.info("Received request")
     event = await request.json()
     if event is None:
         return {"error": "Invalid JSON data"}, 400
 
-    if event["type"] != "INSERT":
+    if event["type"] != "INSERT" or event["record"]["bucket_id"] != "route_uploads":
         return {"error": "Invalid event type"}, 400
 
-    async with process_video_lock:
-        await begin_processing(event)
+    asyncio.create_task(begin_processing(event))
 
     return {"message": "Started processing"}, 202
 
 
-async def begin_processing(data):
+process_video_lock = asyncio.Semaphore(1)
+
+
+async def begin_processing(event):
+    async with process_video_lock:
+        await process_video(event)
+
+
+async def process_video(data):
     video_path = None
     try:
         bytes = supabase.storage.from_("route_uploads").download(data["record"]["name"])
@@ -48,7 +54,8 @@ async def begin_processing(data):
 
         upload_details = upload_details.data[0]
 
-        route_details = supabase.from_("routes").select("*").eq("id", upload_details["route_id"]).single().execute().data
+        route_details = supabase.from_("routes").select("*").eq("id",
+                                                                upload_details["route_id"]).single().execute().data
 
         video_path = os.path.join(config.DOWNLOADS_DIR, data["record"]["name"])
         os.makedirs(os.path.dirname(video_path), exist_ok=True)
@@ -85,13 +92,14 @@ async def begin_processing(data):
         log.info(f"extracted {len(measurements)} measurements ")
         if len(measurements) > 0:
             supabase.from_("routes").update({"path": measurements}).eq("id", route_details["id"]).execute()
-        supabase.from_("route_upload_details").update({"status": "success" if len(measurements) > 0 else "error"}).eq("upload_id", route_upload_details_id).execute()
-
+        supabase.from_("route_upload_details").update({"status": "success" if len(measurements) > 0 else "error"}).eq(
+            "upload_id", route_upload_details_id).execute()
 
         log.info(f"Finished processing {video_path}")
     except Exception as e:
         log.error(e)
-        supabase.from_("route_upload_details").update({"status": "error"}).eq("upload_id", route_upload_details_id).execute()
+        supabase.from_("route_upload_details").update({"status": "error"}).eq("upload_id",
+                                                                              route_upload_details_id).execute()
     finally:
         if video_path is not None:
             os.remove(video_path)

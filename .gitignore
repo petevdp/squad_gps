@@ -1,8 +1,8 @@
 /videos/
-/maps/map-tiles/
 /gui/public/maps/
 /routes/
-/maps/
 /logs/
 /video_downloads/
 /images/
+/maps/
+/.env
