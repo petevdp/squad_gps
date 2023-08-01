@@ -47,17 +47,21 @@ async def begin_processing(event):
 
 
 async def process_video(data, tempdir):
+    _log = log.bind(remote_filepath=data["record"]["name"], tempdir=tempdir)
+    _log.info("Processing video")
+
     video_path = None
     route_upload_details_id = None
     try:
         # for some reason the download isn't completed by the time the webhook is called sometimes
         for i in range(20):
             try:
+                _log.info(f"downloading video (attempt {i})")
                 bytes = supabase.storage.from_("route_uploads").download(data["record"]["name"])
                 break
             except Exception as e:
-                log.exception(e)
-                log.info(f"trying again in 1s (attempt {i})")
+                _log.exception(e)
+                _log.info(f"trying again in 1s")
                 await asyncio.sleep(1)
         else:
             raise HTTPException(status_code=500, detail="Failed to download video")
@@ -69,13 +73,15 @@ async def process_video(data, tempdir):
             raise HTTPException(status_code=404, detail="Upload details not found")
 
         upload_details = upload_details.data[0]
+        _log = _log.bind(upload_details=upload_details)
 
+        _log.info(f"getting route details for {upload_details['route_id']}")
         route_details = supabase.from_("routes").select("*").eq("id",
                                                                 upload_details["route_id"]).single().execute().data
 
         video_path = os.path.join(config.DOWNLOADS_DIR, data["record"]["name"])
+        _log.info(f"writing video to {video_path}")
         os.makedirs(os.path.dirname(video_path), exist_ok=True)
-
         map_name = route_details["map_name"]
         ## write to file
         with open(video_path, "wb") as f:
@@ -87,6 +93,7 @@ async def process_video(data, tempdir):
         outfiles = []
         for i in range(config.NUM_PROCESSES):
             filepath = os.path.join(tempdir, f"out_{i}.csv")
+            _log.info(f"starting process {i}")
             sp_args = [script_path, *ProcessVideoArgs(map_name, video_path, str(i), filepath)]
             tasks.append(asyncio.create_subprocess_shell(" ".join(sp_args)))
             outfiles.append(filepath)
@@ -98,6 +105,7 @@ async def process_video(data, tempdir):
         measurements = []
         # parse outputs as csv
         for outfile in outfiles:
+            _log.info(f"reading output from {outfile}")
             with open(outfile, "r") as f:
                 output = f.read()
                 for line in output.strip().split("\n"):
@@ -107,13 +115,16 @@ async def process_video(data, tempdir):
                     x, y, time = line.split(',')
                     measurements.append({"x": int(x), "y": int(y), "time": int(time)})
 
-        log.info(f"extracted {len(measurements)} measurements ")
+        _log.info(f"extracted {len(measurements)} measurements ")
         if len(measurements) > 0:
+            _log.error("no measurements found")
             supabase.from_("routes").update({"path": measurements}).eq("id", route_details["id"]).execute()
+        status = "success" if len(measurements) > 0 else "error"
+
+        _log.info(f"Finished processing {route_upload_details_id} with status {status}. Writing to db...")
         supabase.from_("route_upload_details").update({"status": "success" if len(measurements) > 0 else "error"}).eq(
             "upload_id", route_upload_details_id).execute()
 
-        log.info(f"Finished processing {video_path}")
     except Exception as e:
         log.exception(e)
         if route_upload_details_id:

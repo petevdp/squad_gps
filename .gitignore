@@ -6,3 +6,4 @@
 /images/
 /maps/
 /.env
+/http-client.private.env.json
