@@ -546,11 +546,11 @@ function useMap(
 		S.routeLayerGroups = new Map<string, L.LayerGroup>()
 	}
 
-	function updateRouteUI(route: Route) {
+	function updateRouteUI(route: Route, filtered: boolean) {
 		const INTERVAL = 1000 * 10
 		let routeLayerGroup = S.routeLayerGroups.get(route.id)
 		routeLayerGroup?.remove()
-		if (route.state.enabled && route.path) {
+		if (route.state.enabled && route.path && !filtered) {
 			routeLayerGroup = new L.LayerGroup()
 			const start = route.path[0]
 			for (let i = 0; i < route.path.length - 1; i++) {
@@ -655,7 +655,8 @@ function useMap(
 	createEffect(async () => {
 		for (let route of routes) {
 			if (route.path === null) continue
-			updateRouteUI(route as UploadedRoute)
+			const filtered = !filteredRouteEntries().find((r) => r.id === route.id)
+			updateRouteUI(route as UploadedRoute, filtered)
 		}
 	})
 
