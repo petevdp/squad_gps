@@ -30,6 +30,7 @@
     "@solidjs/router": "^0.8.2",
     "@supabase/supabase-js": "^2.31.0",
     "@thisbeyond/solid-select": "^0.14.0",
+    "@vercel/edge": "^0.3.4",
     "highlight.run": "^7.3.11",
     "leaflet": "^1.9.4",
     "solid-forms": "^0.4.8",

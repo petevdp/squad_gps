@@ -10,6 +10,9 @@ dependencies:
   '@thisbeyond/solid-select':
     specifier: ^0.14.0
     version: 0.14.0(solid-js@1.7.6)
+  '@vercel/edge':
+    specifier: ^0.3.4
+    version: 0.3.4
   highlight.run:
     specifier: ^7.3.11
     version: 7.3.11
@@ -1189,6 +1192,10 @@ packages:
       '@typescript-eslint/types': 6.2.1
       eslint-visitor-keys: 3.4.2
     dev: true
+
+  /@vercel/edge@0.3.4:
+    resolution: { integrity: sha512-dFU+yAUDQRwpuRGxRDlEO1LMq0y1LGsBgkyryQWe4w15/Fy2/lCnpvdIoAhHl3QvIGAxCLHzwRHsqfLRdpxgJQ== }
+    dev: false
 
   /acorn-jsx@5.3.2(acorn@8.10.0):
     resolution: { integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ== }
