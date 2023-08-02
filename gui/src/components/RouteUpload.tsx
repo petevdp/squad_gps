@@ -1,15 +1,24 @@
-import {Component, createEffect, createResource, createSignal, getOwner, onCleanup, onMount, Show,} from 'solid-js'
+import {
+	Component,
+	createEffect,
+	createResource,
+	createSignal,
+	getOwner,
+	onCleanup,
+	onMount,
+	Show,
+} from 'solid-js'
 
 import * as SB from '../supabase'
-import {FileInput, SelectInput, TextInput} from './Input'
+import { FileInput, SelectInput, TextInput } from './Input'
 import VEHICLES from '../assets/vehicles.json'
 import * as Modal from './Modal'
 
 import * as SF from 'solid-forms'
-import {Route} from './RouteViewer'
-import {Guarded} from './Guarded'
-import {DbRoute, MAP_NAMES} from '../types'
-import {RealtimeChannel} from '@supabase/supabase-js'
+import { Route } from './RouteViewer'
+import { Guarded } from './Guarded'
+import { DbRoute, MAP_NAMES } from '../types'
+import { RealtimeChannel } from '@supabase/supabase-js'
 
 type FileUploadDetails = {
 	routeId: string
@@ -163,13 +172,14 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 						class="ml-2 inline-block h-4 w-4 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
 						role="status"
 					>
-						<span
-							class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+						<span class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
 							Uploading {group.controls.name.value}
-							}}...
+							...
 						</span>
 					</span>
-					<div class="p-2 font-light">Uploading {group.controls.name.value}...</div>
+					<div class="p-2 font-light">
+						Uploading {group.controls.name.value}...
+					</div>
 				</div>
 			</Show>
 			<Show when={progress().type === 'uploaded'}>
