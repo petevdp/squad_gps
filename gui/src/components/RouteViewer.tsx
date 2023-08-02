@@ -605,7 +605,7 @@ function useMap(
 					)
 					routeLayerGroup.addLayer(marker)
 					const time = Math.round(start.time + INTERVAL * (intervalsSinceA + i))
-					marker.bindTooltip(`T=${Math.round(time / 1000)}`, {
+					marker.bindTooltip(`T=${Math.round(time / 1000)}s`, {
 						direction: 'right',
 					})
 				}
@@ -640,7 +640,9 @@ function useMap(
 					// pane: "routeMarkers",
 				}
 			)
-			marker.bindTooltip(`T=${Math.round(time / 1000)}`, { direction: 'right' })
+			marker.bindTooltip(`T=${Math.round(time / 1000)}s`, {
+				direction: 'right',
+			})
 			S.routeLayerGroups.get(route.id)!.addLayer(marker)
 			S.comparisonMarkerGroup.addLayer(marker)
 		}
