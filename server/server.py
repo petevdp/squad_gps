@@ -42,7 +42,6 @@ async def begin_processing(event):
     async with process_video_lock:
         with tempfile.TemporaryDirectory(prefix="squad_gps") as tempdir:
             await process_video(event, tempdir)
-            pass
 
 
 async def process_video(data, tempdir):
@@ -99,7 +98,7 @@ async def process_video(data, tempdir):
 
         procs = await asyncio.gather(*tasks)
 
-        await asyncio.gather(*[proc.wait() for proc in procs])
+        await asyncio.gather(*[proc.communicate() for proc in procs])
 
         measurements = []
         # parse outputs as csv
@@ -116,13 +115,12 @@ async def process_video(data, tempdir):
 
         _log.info(f"extracted {len(measurements)} measurements ")
         if len(measurements) > 0:
-            _log.error("no measurements found")
+            _log.info(f"Successfully processed {route_uploads_id} with status . Writing to db...")
             supabase.from_("routes").update({"path": measurements}).eq("id", route_details["id"]).execute()
-        status = "success" if len(measurements) > 0 else "error"
-
-        _log.info(f"Finished processing {route_uploads_id} with status {status}. Writing to db...")
-        supabase.from_("route_uploads").update({"status": "success" if len(measurements) > 0 else "error"}).eq(
-            "upload_id", route_uploads_id).execute()
+            supabase.from_("route_uploads").update({"status": "success"}).eq("upload_id", route_uploads_id).execute()
+        else:
+            _log.error("no measurements found")
+            supabase.from_("route_uploads").update({"status": "error"}).eq("upload_id", route_uploads_id).execute()
 
     except Exception as e:
         log.exception(e)
