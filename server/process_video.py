@@ -57,7 +57,7 @@ def process_video(args: ProcessVideoArgs):
         location = dc.locate_car(args.map_name, map, image)
         # get current time in video
         if location is not None:
-            time = round(cap.get(cv2.CAP_PROP_POS_MSEC), 4)
+            time = round(cap.get(cv2.CAP_PROP_POS_MSEC))
             measurements.append((location, time))
 
             # if config.DEBUG and len(measurements) > 1:
