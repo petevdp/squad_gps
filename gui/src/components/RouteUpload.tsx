@@ -1,24 +1,15 @@
-import {
-	Component,
-	createEffect,
-	createResource,
-	createSignal,
-	getOwner,
-	onCleanup,
-	onMount,
-	Show,
-} from 'solid-js'
+import {Component, createEffect, createResource, createSignal, getOwner, onCleanup, onMount, Show,} from 'solid-js'
 
 import * as SB from '../supabase'
-import { FileInput, SelectInput, TextInput } from './Input'
+import {FileInput, SelectInput, TextInput} from './Input'
 import VEHICLES from '../assets/vehicles.json'
 import * as Modal from './Modal'
 
 import * as SF from 'solid-forms'
-import { Route } from './RouteViewer'
-import { Guarded } from './Guarded'
-import { DbRoute, MAP_NAMES } from '../types'
-import { RealtimeChannel } from '@supabase/supabase-js'
+import {Route} from './RouteViewer'
+import {Guarded} from './Guarded'
+import {DbRoute, MAP_NAMES} from '../types'
+import {RealtimeChannel} from '@supabase/supabase-js'
 
 type FileUploadDetails = {
 	routeId: string
@@ -32,8 +23,6 @@ type ProcessingStatus =
 	  }
 	| {
 			type: 'inProgress'
-			bytesUploaded: number
-			bytesTotal: number
 	  }
 	| {
 			type: 'uploaded'
@@ -73,13 +62,6 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 	)
 	const categoriesWithNew = () =>
 		(categories() ? ['New Category', ...categories()!] : []) as string[]
-
-	const uploadPercentage = (): string | undefined => {
-		const _progress = progress()
-		if (_progress.type === 'inProgress') {
-			return `${(_progress.bytesUploaded / _progress.bytesTotal) * 100}%`
-		}
-	}
 
 	const error = (): string | undefined => {
 		const _progress = progress()
@@ -176,11 +158,18 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 				</form>
 			</Show>
 			<Show when={progress().type === 'inProgress'}>
-				<div class="h-1 w-full bg-neutral-200 dark:bg-neutral-600">
-					<div
-						class="bg-primary h-1"
-						style={`width: ${uploadPercentage()!}`}
-					></div>
+				<div class="flex flex-row items-center">
+					<span
+						class="ml-2 inline-block h-4 w-4 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+						role="status"
+					>
+						<span
+							class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+							Uploading {group.controls.name.value}
+							}}...
+						</span>
+					</span>
+					<div class="p-2 font-light">Uploading {group.controls.name.value}...</div>
 				</div>
 			</Show>
 			<Show when={progress().type === 'uploaded'}>
