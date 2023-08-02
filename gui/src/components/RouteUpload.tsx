@@ -277,7 +277,7 @@ function useRouteUpload(
 				{
 					event: 'UPDATE',
 					schema: 'public',
-					table: 'route_upload_details',
+					table: 'route_uploads',
 					filter: 'upload_id=eq.' + uploadId,
 				},
 				(payload) => {
@@ -300,7 +300,7 @@ function useRouteUpload(
 		if (!_fileDetails) return
 		const uploadPath = `${uploadId}.mp4`
 		{
-			const { data, error } = await SB.sb.from('route_upload_details').insert({
+			const { data, error } = await SB.sb.from('route_uploads').insert({
 				route_id: _fileDetails.routeId,
 				upload_id: uploadId,
 				original_filename: _fileDetails.file.name,

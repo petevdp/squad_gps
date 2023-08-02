@@ -50,7 +50,7 @@ async def process_video(data, tempdir):
     _log.info("Processing video")
 
     video_path = None
-    route_upload_details_id = None
+    route_uploads_id = None
     try:
         # for some reason the download isn't completed by the time the webhook is called sometimes
         for i in range(20):
@@ -65,9 +65,9 @@ async def process_video(data, tempdir):
         else:
             raise HTTPException(status_code=500, detail="Failed to download video")
 
-        route_upload_details_id = os.path.basename(data["record"]["name"]).split(".")[0]
-        upload_details = supabase.from_("route_upload_details").select("*").eq("upload_id",
-                                                                               route_upload_details_id).execute()
+        route_uploads_id = os.path.basename(data["record"]["name"]).split(".")[0]
+        upload_details = supabase.from_("route_uploads").select("*").eq("upload_id",
+                                                                        route_uploads_id).execute()
         if not upload_details.data:
             raise HTTPException(status_code=404, detail="Upload details not found")
 
@@ -120,15 +120,15 @@ async def process_video(data, tempdir):
             supabase.from_("routes").update({"path": measurements}).eq("id", route_details["id"]).execute()
         status = "success" if len(measurements) > 0 else "error"
 
-        _log.info(f"Finished processing {route_upload_details_id} with status {status}. Writing to db...")
-        supabase.from_("route_upload_details").update({"status": "success" if len(measurements) > 0 else "error"}).eq(
-            "upload_id", route_upload_details_id).execute()
+        _log.info(f"Finished processing {route_uploads_id} with status {status}. Writing to db...")
+        supabase.from_("route_uploads").update({"status": "success" if len(measurements) > 0 else "error"}).eq(
+            "upload_id", route_uploads_id).execute()
 
     except Exception as e:
         log.exception(e)
-        if route_upload_details_id:
-            supabase.from_("route_upload_details").update({"status": "error"}).eq("upload_id",
-                                                                                  route_upload_details_id).execute()
+        if route_uploads_id:
+            supabase.from_("route_uploads").update({"status": "error"}).eq("upload_id",
+                                                                           route_uploads_id).execute()
     finally:
         if video_path is not None:
             os.remove(video_path)

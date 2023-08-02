@@ -1,7 +1,8 @@
 create extension if not exists "pgaudit" with schema "extensions";
 
 
-create table "public"."route_upload_details" (
+create table "public"."route_uploads"
+(
     "route_id" uuid not null,
     "created_at" timestamp with time zone not null default now(),
     "upload_id" uuid not null,
@@ -10,7 +11,7 @@ create table "public"."route_upload_details" (
 );
 
 
-alter table "public"."route_upload_details" enable row level security;
+alter table "public"."route_uploads" enable row level security;
 
 create table "public"."routes" (
     "id" uuid not null,
@@ -26,17 +27,19 @@ create table "public"."routes" (
 
 alter table "public"."routes" enable row level security;
 
-CREATE UNIQUE INDEX route_uploads_pkey ON public.route_upload_details USING btree (route_id, upload_id);
+CREATE UNIQUE INDEX route_uploads_pkey ON public.route_uploads USING btree (route_id, upload_id);
 
 CREATE UNIQUE INDEX routes_pkey ON public.routes USING btree (id);
 
-alter table "public"."route_upload_details" add constraint "route_uploads_pkey" PRIMARY KEY using index "route_uploads_pkey";
+alter table "public"."route_uploads"
+    add constraint "route_uploads_pkey" PRIMARY KEY using index "route_uploads_pkey";
 
 alter table "public"."routes" add constraint "routes_pkey" PRIMARY KEY using index "routes_pkey";
 
-alter table "public"."route_upload_details" add constraint "route_upload_details_route_id_fkey" FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE not valid;
+alter table "public"."route_uploads"
+    add constraint "route_uploads_route_id_fkey" FOREIGN KEY (route_id) REFERENCES routes (id) ON DELETE CASCADE not valid;
 
-alter table "public"."route_upload_details" validate constraint "route_upload_details_route_id_fkey";
+alter table "public"."route_uploads" validate constraint "route_uploads_route_id_fkey";
 
 alter table "public"."routes" add constraint "routes_author_fkey" FOREIGN KEY (author) REFERENCES auth.users(id) not valid;
 
@@ -47,7 +50,7 @@ create or replace view "public"."categories" as  SELECT DISTINCT routes.category
 
 
 create policy "Enable insert for authenticated users only"
-on "public"."route_upload_details"
+on "public"."route_uploads"
 as permissive
 for insert
 to authenticated
@@ -55,7 +58,7 @@ with check (true);
 
 
 create policy "Enable read access for all users"
-on "public"."route_upload_details"
+on "public"."route_uploads"
 as permissive
 for select
 to public
