@@ -8,3 +8,5 @@
 /.env
 /http-client.private.env.json
 .vercel
+
+.idea/dataSources.xml
