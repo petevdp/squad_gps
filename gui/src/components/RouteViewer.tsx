@@ -546,7 +546,7 @@ function useMap(
 		S.routeLayerGroups = new Map<string, L.LayerGroup>()
 	}
 
-	function updateRouteUI(route: Route, filtered: boolean) {
+	function updateRouteLeafletElements(route: Route, filtered: boolean) {
 		const INTERVAL = 1000 * 10
 		let routeLayerGroup = S.routeLayerGroups.get(route.id)
 		routeLayerGroup?.remove()
@@ -580,8 +580,8 @@ function useMap(
 					})
 				})
 				routeLayerGroup.addLayer(line).addTo(S.map)
-				const intervalsSinceA = Math.floor((a.time - start.time) / INTERVAL)
-				const intervalsSinceB = Math.floor((b.time - start.time) / INTERVAL)
+				const intervalsSinceA = Math.floor(a.time / INTERVAL)
+				const intervalsSinceB = Math.floor(b.time / INTERVAL)
 				if (intervalsSinceA === intervalsSinceB) continue
 
 				const diffX = b.x - a.x
@@ -589,8 +589,7 @@ function useMap(
 				const diffTime = b.time - a.time
 
 				for (let i = 1; i <= intervalsSinceB - intervalsSinceA; i++) {
-					const intervalDiffTime =
-						INTERVAL * (intervalsSinceA + i) - (a.time - start.time)
+					const intervalDiffTime = INTERVAL * (intervalsSinceA + i) - a.time
 					const interpolatedX = a.x + diffX * (intervalDiffTime / diffTime)
 					const interpolatedY = a.y + diffY * (intervalDiffTime / diffTime)
 					let marker = L.circleMarker(
@@ -604,7 +603,7 @@ function useMap(
 						}
 					)
 					routeLayerGroup.addLayer(marker)
-					const time = Math.round(start.time + INTERVAL * (intervalsSinceA + i))
+					const time = Math.round(INTERVAL * (intervalsSinceA + i))
 					marker.bindTooltip(`T=${Math.round(time / 1000)}s`, {
 						direction: 'right',
 					})
