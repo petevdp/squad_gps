@@ -282,32 +282,31 @@ const RouteListItem: Component<RouteListItemProps> = (props) => {
 	const owner = getOwner()!
 	return (
 		<li
-			class="inset-2 flex w-full cursor-pointer flex-row justify-between border-b-2 border-neutral-100 border-opacity-100 p-2 hover:bg-gray-100 dark:border-opacity-50"
+			class="inset-2 flex w-full cursor-pointer flex-col justify-between border-b-2 border-neutral-100 border-opacity-100 p-2 hover:bg-gray-100 dark:border-opacity-50"
 			onclick={() => props.toggleRouteEnabled()}
 		>
-			<div class={'flex w-full flex-row border-b-2 ' + borderStyle()}>
-				<span class="mr-2">{props.route.name}</span>-
-				<small class="ml-2 mr-2 font-light">
-					{props.route.metadata.category}
-				</small>
-				-
-				<small class="ml-2 mr-2 font-light">
-					{props.route.metadata.vehicle}
-				</small>
+			<div class={'flex w-full font-semibold' + borderStyle()}>
+				{props.route.name}
 			</div>
-			<button
-				onclick={async (e) => {
-					e.stopPropagation()
-					const isLoggedIn = await Modal.ensureLoggedIn(
-						owner,
-						'You need to be logged in to upload a route.'
-					)
-					if (isLoggedIn) editModal.setVisible(true)
-				}}
-				class="align-center ml-2 justify-end"
-			>
-				edit
-			</button>
+			<div class="flex w-full flex-row justify-between border-b-2">
+				<span>
+					<small class="mr-2 font-light">{props.route.metadata.category}</small>
+					<small class="ml-2 font-light">{props.route.metadata.vehicle}</small>
+				</span>
+				<button
+					onclick={async (e) => {
+						e.stopPropagation()
+						const isLoggedIn = await Modal.ensureLoggedIn(
+							owner,
+							'You need to be logged in to upload a route.'
+						)
+						if (isLoggedIn) editModal.setVisible(true)
+					}}
+					class="align-center justify-self-end"
+				>
+					edit
+				</button>
+			</div>
 		</li>
 	)
 }
@@ -602,7 +601,9 @@ function useMap(
 					)
 					routeLayerGroup.addLayer(marker)
 					const time = Math.round(start.time + INTERVAL * (intervalsSinceA + i))
-					marker.bindTooltip(`T=${time}`, { direction: 'right' })
+					marker.bindTooltip(`T=${Math.round(time / 1000)}`, {
+						direction: 'right',
+					})
 				}
 				S.routeLayerGroups.set(route.id, routeLayerGroup)
 			}
