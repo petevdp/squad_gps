@@ -285,7 +285,11 @@ const RouteListItem: Component<RouteListItemProps> = (props) => {
 			class="inset-2 flex w-full cursor-pointer flex-col justify-between border-b-2 border-neutral-100 border-opacity-100 p-2 hover:bg-gray-100 dark:border-opacity-50"
 			onclick={() => props.toggleRouteEnabled()}
 		>
-			<div class={'flex w-full font-semibold' + borderStyle()}>
+			<div
+				class={
+					'flex w-full border-b-2 border-solid font-semibold ' + borderStyle()
+				}
+			>
 				{props.route.name}
 			</div>
 			<div class="flex w-full flex-row justify-between border-b-2">
