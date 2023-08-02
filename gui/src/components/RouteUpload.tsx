@@ -38,6 +38,7 @@ type ProcessingStatus =
 	  }
 	| {
 			type: 'success'
+			message: string
 	  }
 	| {
 			type: 'error'
@@ -59,7 +60,6 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 	const { progress, startFileUpload, group, deleteRoute, onSubmit } =
 		useRouteUpload(props.routeToEdit, props.map, props.closeModal)
 
-	//@ts-ignore
 	const [categories] = createResource(
 		() =>
 			SB.sb
@@ -88,6 +88,8 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 		}
 	})
 
+	// @ts-ignore
+	// @ts-ignore
 	return (
 		<div>
 			<Show when={['init', 'error'].includes(progress().type)}>
@@ -104,11 +106,19 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 							control={group.controls.video}
 							class="w-max"
 						/>
-						<TextInput
-							class="col-span-2"
-							label="Name"
-							control={group.controls.name}
-						/>
+						<span class="col-span-2 flex">
+							<TextInput
+								class="flex-1"
+								label="Name"
+								control={group.controls.name}
+							/>
+							<TextInput
+								control={group.controls.timeOffset}
+								label="Offset(s)"
+								type="number"
+								class="w-28"
+							/>
+						</span>
 						<SelectInput
 							control={group.controls.vehicle}
 							label="Vehicle"
@@ -197,7 +207,18 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 				</div>
 			</Show>
 			<Show when={progress().type === 'success'}>
-				<div class="p-2">Processing done for {group.controls.name.value}</div>
+				<span class="flex flex-row justify-between">
+					<div class="p-2">{(progress() as { message: string }).message}</div>
+					<button
+						type="button"
+						class="bg-primary-100 text-primary-700 hover:bg-primary-accent-100 focus:bg-primary-accent-100 active:bg-primary-accent-200 mr-2 inline-block rounded px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal transition duration-150 ease-in-out focus:outline-none focus:ring-0"
+						onclick={() => {
+							props.closeModal()
+						}}
+					>
+						Close
+					</button>
+				</span>
 			</Show>
 			<Show when={progress().type === 'error'}>
 				<div class="text-warning-700 p-2">Upload failed: ${error()}</div>
@@ -264,6 +285,7 @@ function useRouteUpload(
 				required: !routeToEdit,
 			}),
 			vehicle: SF.createFormControl(routeToEdit?.metadata.vehicle || ''),
+			timeOffset: SF.createFormControl(routeToEdit?.metadata.timeOffset || 0),
 		},
 		{ required: true }
 	)
@@ -281,7 +303,10 @@ function useRouteUpload(
 				},
 				(payload) => {
 					if (payload.new.status === 'success') {
-						setProgress({ type: 'success' })
+						setProgress({
+							type: 'success',
+							message: 'Video processing completed',
+						})
 					}
 					if (payload.new.status === 'error') {
 						setProgress({
@@ -342,11 +367,9 @@ function useRouteUpload(
 	})
 
 	async function onSubmit() {
-		if (!['init', 'error'].includes(progress().type)) return
 		group.markReadonly(true)
 		const _file = group.controls.video.value
 		// check if the file is an mp4
-		const routeId = routeToEdit?.id || crypto.randomUUID()
 
 		const category =
 			group.controls.category.value === 'New Category'
@@ -361,13 +384,30 @@ function useRouteUpload(
 					map_name: group.controls.map.value,
 					category: category,
 					vehicle: group.controls.vehicle.value,
+					offset: group.controls.timeOffset.value,
 				})
 				.eq('id', routeToEdit.id)
 			if (error) {
 				alert(error.message)
 				return
 			}
+			if (_file) {
+				startFileUpload({
+					routeId: routeToEdit.id,
+					userId: SB.session()!.user.id,
+					file: _file,
+				})
+			} else {
+				setProgress({ type: 'success', message: 'Route updated' })
+			}
 		} else {
+			if (!['init', 'error'].includes(progress().type) || !_file) {
+				console.error(
+					'Invalid state, should not be able to submit while uploading, or without a file'
+				)
+				return
+			}
+			const routeId = crypto.randomUUID()
 			const { error } = await SB.sb.from('routes').insert([
 				{
 					id: routeId,
@@ -376,6 +416,7 @@ function useRouteUpload(
 					author: SB.session()!.user.id,
 					category: category,
 					vehicle: group.controls.vehicle.value,
+					offset: group.controls.timeOffset.value,
 				},
 			])
 
@@ -384,17 +425,7 @@ function useRouteUpload(
 				setProgress({ type: 'error', error: error.message })
 				return
 			}
-		}
-
-		if (_file) {
-			if (_file.type !== 'video/mp4') {
-				setProgress({ type: 'error', error: 'Only mp4 files are supported' })
-				return
-			}
 			startFileUpload({ routeId, userId: SB.session()!.user.id, file: _file })
-		} else if (!routeToEdit) {
-			setProgress({ type: 'error', error: 'No file selected' })
-			return
 		}
 	}
 

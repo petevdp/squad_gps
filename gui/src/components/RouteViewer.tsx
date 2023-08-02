@@ -31,7 +31,6 @@ type ButtonColor = {
 type RouteUIState = {
 	enabled: boolean
 	color: ButtonColor
-	penalty: number
 }
 
 type RouteMetadata = {
@@ -42,6 +41,7 @@ type RouteMetadata = {
 	description: string | null
 	submitDate: string
 	vehicle: string
+	timeOffset: number
 }
 
 export type Route = {
@@ -70,6 +70,11 @@ const ROUTE_COLORS: ButtonColor[] = [
 	{ enabled: 'border-b-pink-500', disabled: 'border-b-pink-200' },
 	{ enabled: 'border-b-indigo-500', disabled: 'border-b-indigo-200' },
 	{ enabled: 'border-b-fuchsia-500', disabled: 'border-b-fuchsia-200' },
+	{ enabled: 'border-b-rose-500', disabled: 'border-b-rose-200' },
+	{ enabled: 'border-b-cyan-500', disabled: 'border-b-cyan-200' },
+	{ enabled: 'border-b-lime-500', disabled: 'border-b-lime-200' },
+	{ enabled: 'border-b-emerald-500', disabled: 'border-b-emerald-200' },
+	{ enabled: 'border-b-teal-500', disabled: 'border-b-teal-200' },
 ]
 
 function RouteViewer() {
@@ -485,11 +490,8 @@ function useMap(
 		const up_left_x = Math.min(bounds[0].x, bounds[1].x)
 		const up_left_y = Math.min(bounds[0].y, bounds[1].y)
 
-		const zoomOffset = 0
-		let tileSize = 256
-
-		const x_stretch = tileSize / width
-		const y_stretch = tileSize / height
+		const x_stretch = 256 / width
+		const y_stretch = 256 / height
 
 		const crs = L.extend({}, L.CRS.Simple, {
 			// Move origin to upper left corner of map
@@ -528,15 +530,13 @@ function useMap(
 
 		// https://zxyydvtjfwtliqnhfrtt.supabase.co/storage/v1/object/public/map_tiles/map-tiles/Fools_Road_Minimap/0/0/0.png
 		new L.TileLayer(
-			`${
-				import.meta.env.VITE_SUPABASE_URL
-			}/storage/v1/object/public/map_tiles/map-tiles/${_mapName}_Minimap/{z}/{x}/{y}.png`,
+			`${'https://zxyydvtjfwtliqnhfrtt.supabase.co'}/storage/v1/object/public/map_tiles/map-tiles/${_mapName}_Minimap/{z}/{x}/{y}.png`,
 			{
 				tms: false,
 				maxNativeZoom: 4,
-				zoomOffset: zoomOffset,
+				zoomOffset: 0,
 				// scale tiles to match minimap width and height
-				tileSize: tileSize,
+				tileSize: 256,
 				pane: 'background',
 				// @ts-ignore
 				bounds: baseBounds,
@@ -552,7 +552,6 @@ function useMap(
 		routeLayerGroup?.remove()
 		if (route.state.enabled && route.path && !filtered) {
 			routeLayerGroup = new L.LayerGroup()
-			const start = route.path[0]
 			for (let i = 0; i < route.path.length - 1; i++) {
 				const a = route.path[i]
 				const b = route.path[i + 1]
@@ -657,7 +656,7 @@ function useMap(
 		for (let route of routes) {
 			if (route.path === null) continue
 			const filtered = !filteredRouteEntries().find((r) => r.id === route.id)
-			updateRouteUI(route as UploadedRoute, filtered)
+			updateRouteLeafletElements(route as UploadedRoute, filtered)
 		}
 	})
 
@@ -674,14 +673,21 @@ function useMap(
 }
 
 function convertDbRoute(dbRoute: DbRoute, routeIdx: number) {
+	const paths = (dbRoute.path as Measurement[] | null)?.map(
+		(m) =>
+			({
+				x: m.x,
+				y: m.y,
+				time: m.time + dbRoute.offset * 1000,
+			}) satisfies Measurement
+	)
 	return {
 		id: dbRoute.id,
 		name: dbRoute.name,
-		path: dbRoute.path as Measurement[],
+		path: paths || null,
 		state: {
 			enabled: true,
 			color: ROUTE_COLORS[routeIdx % ROUTE_COLORS.length],
-			penalty: 0,
 		},
 		metadata: {
 			map: dbRoute.map_name,
@@ -691,6 +697,7 @@ function convertDbRoute(dbRoute: DbRoute, routeIdx: number) {
 			author: dbRoute.author,
 			submitDate: dbRoute.created_at!,
 			vehicle: dbRoute.vehicle,
+			timeOffset: dbRoute.offset,
 		},
 	} satisfies Route
 }

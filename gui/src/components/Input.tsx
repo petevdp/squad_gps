@@ -14,9 +14,8 @@ import * as TE from 'tw-elements'
 type TextInputProps = {
 	control: SF.IFormControl
 	label: string
-	type?: 'text' | 'password' | 'email'
+	type?: 'text' | 'password' | 'email' | 'number'
 	class?: string
-	onRef?: (ref: HTMLInputElement) => void
 	focus?: boolean
 }
 
@@ -43,10 +42,7 @@ export const TextInput: Component<TextInputProps> = (props) => {
 		<div class={'relative mb-3 ' + props.class} data-te-input-wrapper-init>
 			<input
 				type={_props.type || 'text'}
-				ref={(r) => {
-					ref = r
-					props.onRef && props.onRef(r)
-				}}
+				ref={ref}
 				id={id}
 				value={_props.control.value}
 				onChange={(e) => _props.control.setValue(e.currentTarget.value)}
@@ -56,6 +52,12 @@ export const TextInput: Component<TextInputProps> = (props) => {
 				disabled={_props.control.isDisabled}
 				onblur={() => _props.control.markTouched(true)}
 			/>
+			<label
+				for={id}
+				class="peer-focus:text-primary dark:peer-focus:text-primary pointer-events-none absolute left-3 top-0 mb-0 max-w-[90%] origin-[0_0] truncate pt-[0.37rem] leading-[1.6] text-neutral-500 transition-all duration-200 ease-out peer-focus:-translate-y-[0.9rem] peer-focus:scale-[0.8] peer-data-[te-input-state-active]:-translate-y-[0.9rem] peer-data-[te-input-state-active]:scale-[0.8] motion-reduce:transition-none dark:text-neutral-200"
+			>
+				{_props.label}
+			</label>
 		</div>
 	)
 }
@@ -181,28 +183,6 @@ export const MultiSelectInput: Component<MultiSelectInputProps> = (props) => {
 			class={'bg-white text-black ' + props.class}
 		/>
 	)
-
-	// return (
-	//     <select
-	//         id={id}
-	//         onchange={e => props.control.setValue(e.currentTarget.value)}
-	//         class="mb-3"
-	//         data-te-select-init
-	//         onkeydown={e => {
-	//             if (e.key === "Enter" && ) {
-	//                 e.preventDefault();
-	//                 e.currentTarget.blur();
-	//             }
-	//         }}
-	//         data-te-select-filter="true"
-	//         required={props.control.isRequired}
-	//         disabled={props.control.isDisabled}
-	//     >
-	//         <For each={props.options()}>{option => (
-	//             <option value={option}>{option}</option>
-	//         )}</For>
-	//     </select>
-	// )
 }
 
 export const SwitchInput: Component<{

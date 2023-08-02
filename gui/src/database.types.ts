@@ -11,21 +11,21 @@ export interface Database {
 		Tables: {
 			route_uploads: {
 				Row: {
-					created_at: string
+					created_at: string | null
 					original_filename: string
 					route_id: string
 					status: string
 					upload_id: string
 				}
 				Insert: {
-					created_at?: string
+					created_at?: string | null
 					original_filename: string
 					route_id: string
 					status?: string
 					upload_id: string
 				}
 				Update: {
-					created_at?: string
+					created_at?: string | null
 					original_filename?: string
 					route_id?: string
 					status?: string
@@ -48,6 +48,7 @@ export interface Database {
 					id: string
 					map_name: string
 					name: string
+					offset: number
 					path: Json | null
 					vehicle: string
 				}
@@ -58,6 +59,7 @@ export interface Database {
 					id: string
 					map_name: string
 					name: string
+					offset?: number
 					path?: Json | null
 					vehicle: string
 				}
@@ -68,6 +70,7 @@ export interface Database {
 					id?: string
 					map_name?: string
 					name?: string
+					offset?: number
 					path?: Json | null
 					vehicle?: string
 				}
