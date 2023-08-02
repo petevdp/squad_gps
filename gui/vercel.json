@@ -1,0 +1,14 @@
+{
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.+)",
+      "status": 307,
+      "headers": {
+        "Location": "/"
+      }
+    }
+  ]
+}
