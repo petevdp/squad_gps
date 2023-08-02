@@ -1,12 +1,14 @@
 drop
-policy "Enable insert for authenticated users only" on "public"."route_uploads";
+    policy if exists "Enable insert for authenticated users only" on "public"."route_uploads";
 
 drop
-policy "Enable read access for all users" on "public"."route_uploads";
+    policy if exists "Enable read access for all users" on "public"."route_uploads";
 
-alter table "public"."route_uploads" drop constraint "route_uploads_route_id_fkey";
+alter table "public"."route_uploads"
+    drop constraint if exists "route_uploads_route_id_fkey";
 
-alter table "public"."route_uploads" drop constraint "route_uploads_pkey";
+alter table "public"."route_uploads"
+    drop constraint if exists "route_uploads_pkey";
 
 drop index if exists "public"."route_uploads_pkey";
 

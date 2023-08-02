@@ -105,6 +105,7 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 							label="Video"
 							control={group.controls.video}
 							class="w-max"
+							accept={'video/mp4'}
 						/>
 						<span class="col-span-2 flex">
 							<TextInput
