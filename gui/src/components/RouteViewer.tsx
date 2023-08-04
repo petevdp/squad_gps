@@ -158,10 +158,10 @@ function RouteViewer() {
 	return (
 		<>
 			<div
-				class="absolute left-2 top-2 flex max-h-[70vh] w-[350px] flex-col rounded bg-white p-2 text-sm"
+				class="absolute left-2 top-2 flex max-h-[95vh] w-[350px] flex-col rounded bg-white p-2 text-sm"
 				style="z-index: 500;"
 			>
-				<div class="mb-2 grid grid-cols-2 grid-rows-2 gap-1">
+				<div class="mb-2 grid  grid-cols-[1fr_1fr] grid-rows-[min-content_min-content_min-content_auto] gap-1">
 					<SelectInput
 						class="col-span-2"
 						control={searchGroup.controls.map}
@@ -202,7 +202,7 @@ function RouteViewer() {
 						</button>
 					</div>
 				</div>
-				<ul class="w-full">
+				<ul class="w-full overflow-y-scroll">
 					<For each={filteredRouteEntries()}>
 						{(route) => (
 							<RouteListItem
