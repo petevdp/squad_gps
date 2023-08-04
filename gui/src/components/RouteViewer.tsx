@@ -359,7 +359,7 @@ function useRoutes(mapName: Accessor<string | null>) {
 			}
 
 			const routes = routeRecords
-				.map((r, i) => convertDbRoute(r, i))
+				.map((r, i) => convertDbRoute(r))
 				.filter(filterRoute) as UploadedRoute[]
 			setRoutes(routes)
 		}
@@ -380,26 +380,17 @@ function useRoutes(mapName: Accessor<string | null>) {
 						setRoutes(routesStore.filter((r) => r.id !== payload.old.id))
 						return
 					}
+					const route = convertDbRoute(payload.new as DbRoute)
+					if (!filterRoute(route)) return
 					if (payload.eventType === 'INSERT') {
-						const newRoute = convertDbRoute(
-							payload.new as DbRoute,
-							routesStore.length
-						)
-						if (!filterRoute(newRoute)) return
-						setRoutes((r) => [...r, newRoute])
+						setRoutes((routes) => [...routes, route])
 					}
 					if (payload.eventType === 'UPDATE') {
-						let routeIdx = routesStore.findIndex((r) => r.id === payload.new.id)
+						let routeIdx = routesStore.findIndex((r) => r.id === route.id)
 						if (routeIdx === -1) {
-							setRoutes(
-								(r) => r.id == payload.new.id,
-								convertDbRoute(payload.new as DbRoute, routesStore.length)
-							)
+							setRoutes((routes) => [...routes, route])
 						} else {
-							setRoutes(
-								(r) => r.id == payload.new.id,
-								convertDbRoute(payload.new as DbRoute, routeIdx)
-							)
+							setRoutes((r) => r.id == payload.new.id, route)
 						}
 					}
 				}
@@ -693,7 +684,7 @@ function useMap(
 	return { categories, vehicles, filteredRouteEntries }
 }
 
-function convertDbRoute(dbRoute: DbRoute, routeIdx: number) {
+function convertDbRoute(dbRoute: DbRoute) {
 	const paths = (dbRoute.path as Measurement[] | null)?.map(
 		(m) =>
 			({
