@@ -6,6 +6,7 @@ import {
 	createSignal,
 	For,
 	getOwner,
+	mapArray,
 	onMount,
 	Show,
 } from 'solid-js'
@@ -30,7 +31,6 @@ type ButtonColor = {
 
 type RouteUIState = {
 	enabled: boolean
-	color: ButtonColor
 }
 
 type RouteMetadata = {
@@ -151,10 +151,6 @@ function RouteViewer() {
 		})
 	}
 
-	createEffect(() => {
-		console.log({ vehicles: vehicles(), categories: categories() })
-	})
-
 	return (
 		<>
 			<div
@@ -204,10 +200,11 @@ function RouteViewer() {
 				</div>
 				<ul class="w-full overflow-y-scroll">
 					<For each={filteredRouteEntries()}>
-						{(route) => (
+						{(route, idx) => (
 							<RouteListItem
 								route={route}
 								enabled={route.state.enabled}
+								buttonColor={ROUTE_COLORS[idx() % ROUTE_COLORS.length]}
 								toggleRouteEnabled={() =>
 									setRouteEnabled(route.id, !route.state.enabled)
 								}
@@ -264,6 +261,7 @@ export const GuardedRouteViewer: Component = () => (
 type RouteListItemProps = {
 	route: Route
 	enabled: boolean
+	buttonColor: ButtonColor
 	toggleRouteEnabled: () => void
 }
 const RouteListItem: Component<RouteListItemProps> = (props) => {
@@ -281,9 +279,7 @@ const RouteListItem: Component<RouteListItemProps> = (props) => {
 		getOwner()!
 	)
 	const borderStyle = () =>
-		props.enabled
-			? props.route.state.color.enabled
-			: props.route.state.color.disabled
+		props.enabled ? props.buttonColor.enabled : props.buttonColor.disabled
 	const owner = getOwner()!
 	return (
 		<li
@@ -343,23 +339,30 @@ function useMapName(
 
 function useRoutes(mapName: Accessor<string | null>) {
 	let routeInsertChannel: RealtimeChannel
-	const [routes, setRoutes] = createStore<Route[]>([])
+	const [routesStore, setRoutes] = createStore<UploadedRoute[]>([])
 	createEffect(async () => {
 		const _mapName = mapName()
 		if (mapName === null) return
 
-		const { data: routeRecords, error } = await SB.sb
-			.from('routes')
-			.select('*')
-			.eq('map_name', _mapName)
+		const filterRoute = (route: Route): route is UploadedRoute =>
+			!!route.path && route.path.length > 0
 
-		if (error) {
-			console.error(error)
-			return
+		{
+			const { data: routeRecords, error } = await SB.sb
+				.from('routes')
+				.select('*')
+				.eq('map_name', _mapName)
+
+			if (error) {
+				console.error(error)
+				return
+			}
+
+			const routes = routeRecords
+				.map((r, i) => convertDbRoute(r, i))
+				.filter(filterRoute) as UploadedRoute[]
+			setRoutes(routes)
 		}
-
-		const routes: Route[] = routeRecords.map((r, i) => convertDbRoute(r, i))
-		setRoutes(routes)
 
 		if (routeInsertChannel) await routeInsertChannel.unsubscribe()
 		routeInsertChannel = SB.sb
@@ -374,22 +377,23 @@ function useRoutes(mapName: Accessor<string | null>) {
 				},
 				(payload) => {
 					if (payload.eventType === 'DELETE') {
-						setRoutes(routes.filter((r) => r.id !== payload.old.id))
+						setRoutes(routesStore.filter((r) => r.id !== payload.old.id))
 						return
 					}
 					if (payload.eventType === 'INSERT') {
 						const newRoute = convertDbRoute(
 							payload.new as DbRoute,
-							routes.length
+							routesStore.length
 						)
+						if (!filterRoute(newRoute)) return
 						setRoutes((r) => [...r, newRoute])
 					}
 					if (payload.eventType === 'UPDATE') {
-						let routeIdx = routes.findIndex((r) => r.id === payload.new.id)
+						let routeIdx = routesStore.findIndex((r) => r.id === payload.new.id)
 						if (routeIdx === -1) {
 							setRoutes(
 								(r) => r.id == payload.new.id,
-								convertDbRoute(payload.new as DbRoute, routes.length)
+								convertDbRoute(payload.new as DbRoute, routesStore.length)
 							)
 						} else {
 							setRoutes(
@@ -410,10 +414,9 @@ function useRoutes(mapName: Accessor<string | null>) {
 			'enabled',
 			() => enabled
 		)
-		console.log(routes)
 	}
 
-	return { routes, setRouteEnabled }
+	return { routes: routesStore, setRouteEnabled }
 }
 
 function useMap(
@@ -421,7 +424,7 @@ function useMap(
 	mapName: Accessor<MapName | null>,
 	categoryFilterControl: IFormControl<string[]>,
 	vehicleFilterControl: IFormControl<string[]>,
-	routes: Route[]
+	routes: UploadedRoute[]
 ) {
 	const [comparisonMarker, setComparisonMarker] = createSignal<{
 		clickedRouteId: string
@@ -430,8 +433,8 @@ function useMap(
 
 	const categories = () => [...new Set(routes.map((r) => r.metadata.category))]
 	const vehicles = () => [...new Set(routes.map((r) => r.metadata.vehicle))]
+
 	createEffect(() => {
-		console.log({ categories: categories() })
 		categoryFilterControl.setValue(
 			categoryFilterControl.value.filter((c) => categories().includes(c))
 		)
@@ -444,22 +447,22 @@ function useMap(
 	})
 
 	const filteredRouteEntries = () => {
-		const filteredRouteEntries: UploadedRoute[] = []
-		for (let route of routes) {
-			if (route.path === null) continue
-			if (
-				!vehicleFilterControl.value.includes(route.metadata.vehicle) &&
-				vehicleFilterControl.value.length > 0
-			)
-				continue
-			if (
-				!categoryFilterControl.value.includes(route.metadata.category) &&
-				categoryFilterControl.value.length > 0
-			)
-				continue
-			filteredRouteEntries.push(route as UploadedRoute)
-		}
-		return filteredRouteEntries
+		return routes
+			.map((route) => {
+				if (route.path === null) return null
+				if (
+					!vehicleFilterControl.value.includes(route.metadata.vehicle) &&
+					vehicleFilterControl.value.length > 0
+				)
+					return null
+				if (
+					!categoryFilterControl.value.includes(route.metadata.category) &&
+					categoryFilterControl.value.length > 0
+				)
+					return null
+				return route
+			})
+			.filter((r) => r !== null) as UploadedRoute[]
 	}
 
 	// intermediate state, derived from the primary state. contains the actual map data, and so on
@@ -546,28 +549,26 @@ function useMap(
 		S.routeLayerGroups = new Map<string, L.LayerGroup>()
 	}
 
-	function updateRouteLeafletElements(route: Route, filtered: boolean) {
+	function updateRouteLeafletElements(
+		route: UploadedRoute,
+		filtered: boolean,
+		color: string
+	) {
 		const INTERVAL = 1000 * 10
 		let routeLayerGroup = S.routeLayerGroups.get(route.id)
 		routeLayerGroup?.remove()
-		if (route.state.enabled && route.path && !filtered) {
+		if (route.state.enabled && !filtered) {
 			routeLayerGroup = new L.LayerGroup()
 			for (let i = 0; i < route.path.length - 1; i++) {
 				const a = route.path[i]
 				const b = route.path[i + 1]
-				const colorFull = route.state.color.enabled
-				const color = colorFull.split('-')[2]
-				const intensity = parseInt(colorFull.split('-')[3])
-
-				//@ts-ignore
-				const hexColor = tailwindColors[color][intensity]
 				const line = L.polyline(
 					[
 						{ lng: a.x, lat: a.y },
 						{ lng: b.x, lat: b.y },
 					],
 					{
-						color: hexColor,
+						color: color,
 						pane: 'routes',
 						weight: 6,
 					}
@@ -623,27 +624,40 @@ function useMap(
 			l.remove()
 		})
 
-		const clickedRoutePath = routes.find((r) => r.id === clickedRouteid)!.path!
+		const clickedRoutePath = routes.find((r) => r.id === clickedRouteid)?.path
+		if (!clickedRoutePath) return
 		const time = pointToInterpolatedTime(clickedRoutePath, point)
 		if (!time) throw new Error('point not on path')
 
 		// add the point to the map for all paths
-		for (let route of filteredRouteEntries()) {
-			const point = timeToInterpolatedPoint(route.path!, time)
-			if (!point) continue
+		mapArray(
+			() => routes,
+			(route) => {
+				createEffect(() => {
+					if (route.state.enabled) {
+						const point = timeToInterpolatedPoint(route.path!, time)
+						if (!point) return
 
-			let marker = L.marker(
-				{ lng: point.x, lat: point.y },
-				{
-					// pane: "routeMarkers",
-				}
-			)
-			marker.bindTooltip(`T=${Math.round(time / 1000)}s`, {
-				direction: 'right',
-			})
-			S.routeLayerGroups.get(route.id)!.addLayer(marker)
-			S.comparisonMarkerGroup.addLayer(marker)
-		}
+						let marker = L.marker(
+							{ lng: point.x, lat: point.y },
+							{
+								// pane: "routeMarkers",
+							}
+						)
+						marker.bindTooltip(`T=${Math.round(time / 1000)}s`, {
+							direction: 'right',
+						})
+						let routeGroup = S.routeLayerGroups.get(route.id)
+						if (!routeGroup) {
+							routeGroup = new L.LayerGroup()
+							S.routeLayerGroups.set(route.id, routeGroup)
+						}
+						routeGroup!.addLayer(marker)
+						S.comparisonMarkerGroup.addLayer(marker)
+					}
+				})
+			}
+		)()
 	}
 
 	createEffect(() => {
@@ -653,19 +667,26 @@ function useMap(
 	})
 
 	createEffect(async () => {
-		for (let route of routes) {
-			if (route.path === null) continue
-			const filtered = !filteredRouteEntries().find((r) => r.id === route.id)
-			updateRouteLeafletElements(route as UploadedRoute, filtered)
-		}
+		routes.map((route, idx) => {
+			createEffect(() => {
+				const filtered = !filteredRouteEntries().find((r) => r.id === route.id)
+				const colorFull = ROUTE_COLORS[idx % ROUTE_COLORS.length]
+				const color = colorFull.enabled.split('-')[2]
+				const intensity = parseInt(colorFull.enabled.split('-')[3])
+				//@ts-ignore
+				const hexColor = tailwindColors[color][intensity]
+
+				updateRouteLeafletElements(route as UploadedRoute, filtered, hexColor)
+			})
+		})
 	})
 
 	createEffect(() => {
-		if (comparisonMarker() && routes)
+		if (comparisonMarker())
 			renderComparisonMarkers(
 				comparisonMarker()!.clickedRouteId,
 				comparisonMarker()!.point,
-				routes
+				filteredRouteEntries()
 			)
 	})
 
@@ -687,7 +708,6 @@ function convertDbRoute(dbRoute: DbRoute, routeIdx: number) {
 		path: paths || null,
 		state: {
 			enabled: true,
-			color: ROUTE_COLORS[routeIdx % ROUTE_COLORS.length],
 		},
 		metadata: {
 			map: dbRoute.map_name,
