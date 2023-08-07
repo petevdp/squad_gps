@@ -1,4 +1,16 @@
-import { Accessor, batch, Component, createEffect, For, getOwner, indexArray, onCleanup, onMount, Show } from 'solid-js'
+import {
+	Accessor,
+	batch,
+	Component,
+	createEffect,
+	For,
+	getOwner,
+	indexArray,
+	on,
+	onCleanup,
+	onMount,
+	Show,
+} from 'solid-js'
 import * as L from 'leaflet'
 import tailwindColors from 'tailwindcss/colors'
 import { useSearchParams } from '@solidjs/router'
@@ -375,58 +387,64 @@ function useRoutes(mapName: Accessor<string | null>) {
 	let routeInsertChannel: RealtimeChannel
 	const [routesStore, setRoutes] = createStore<UploadedRoute[]>([])
 	const orderRoutes = (a: Route, b: Route) => a.name.localeCompare(b.name)
-	createEffect(async () => {
-		const _mapName = mapName()
-		if (mapName === null) return
+	let changingMap = false
+	createEffect(
+		on(mapName, async (mapName) => {
+			changingMap = true
+			setRoutes([])
+			if (mapName === null) return
 
-		const filterRoute = (route: Route): route is UploadedRoute => !!route.path && route.path.length > 0
+			const filterRoute = (route: Route): route is UploadedRoute => !!route.path && route.path.length > 0
 
-		{
-			const { data: routeRecords, error } = await SB.sb.from('routes').select('*').eq('map_name', _mapName)
+			{
+				const { data: routeRecords, error } = await SB.sb.from('routes').select('*').eq('map_name', mapName)
 
-			if (error) {
-				console.error(error)
-				return
+				if (error) {
+					console.error(error)
+					return
+				}
+
+				const routes = routeRecords.map((r, i) => convertDbRoute(r)).filter(filterRoute) as UploadedRoute[]
+				setRoutes(routes.sort(orderRoutes))
 			}
 
-			const routes = routeRecords.map((r, i) => convertDbRoute(r)).filter(filterRoute) as UploadedRoute[]
-			setRoutes(routes.sort(orderRoutes))
-		}
+			await routeInsertChannel?.unsubscribe()
 
-		await routeInsertChannel?.unsubscribe()
-
-		routeInsertChannel = SB.sb
-			.channel('routes-update-channel')
-			.on(
-				'postgres_changes',
-				{
-					event: '*',
-					schema: 'public',
-					table: 'routes',
-					filter: 'map_name=eq.' + _mapName,
-				},
-				(payload) => {
-					if (payload.eventType === 'DELETE') {
-						setRoutes(routesStore.filter((r) => r.id !== payload.old.id))
-						return
-					}
-					const route = convertDbRoute(payload.new as DbRoute)
-					if (!filterRoute(route)) return
-					if (payload.eventType === 'INSERT') {
-						setRoutes((routes) => [...routes, route].sort(orderRoutes))
-					}
-					if (payload.eventType === 'UPDATE') {
-						let routeIdx = routesStore.findIndex((r) => r.id === route.id)
-						if (routeIdx === -1) {
+			routeInsertChannel = SB.sb
+				.channel('routes-update-channel')
+				.on(
+					'postgres_changes',
+					{
+						event: '*',
+						schema: 'public',
+						table: 'routes',
+						filter: 'map_name=eq.' + mapName,
+					},
+					(payload) => {
+						if (changingMap) return
+						if (payload.eventType === 'DELETE') {
+							setRoutes(routesStore.filter((r) => r.id !== payload.old.id))
+							return
+						}
+						const route = convertDbRoute(payload.new as DbRoute)
+						if (!filterRoute(route)) return
+						if (payload.eventType === 'INSERT') {
 							setRoutes((routes) => [...routes, route].sort(orderRoutes))
-						} else {
-							setRoutes((r) => r.id == payload.new.id, route)
+						}
+						if (payload.eventType === 'UPDATE') {
+							let routeIdx = routesStore.findIndex((r) => r.id === route.id)
+							if (routeIdx === -1) {
+								setRoutes((routes) => [...routes, route].sort(orderRoutes))
+							} else {
+								setRoutes((r) => r.id == payload.new.id, route)
+							}
 						}
 					}
-				}
-			)
-			.subscribe()
-	})
+				)
+				.subscribe()
+			changingMap = false
+		})
+	)
 
 	const setRouteEnabled = (id: string, enabled: boolean) => {
 		setRoutes(
@@ -505,8 +523,11 @@ function useMap(
 		routeLayerGroups: new Map<string, L.LayerGroup>(),
 	}
 
-	function setupMap(_mapName: string, mapId: string) {
+	function setupMap(_mapName: string, mapEltId: string) {
+		console.log('setting up map', _mapName)
 		S.map?.remove()
+		S.comparisonMarkerGroup.remove()
+		S.routeLayerGroups.forEach((lg) => lg.remove())
 
 		const bounds = [
 			{ x: 0, y: 0 },
@@ -533,7 +554,7 @@ function useMap(
 			transformation: new L.Transformation(x_stretch, -up_left_x * x_stretch, y_stretch, -up_left_y * y_stretch),
 		})
 
-		S.map = L.map(mapId, {
+		S.map = L.map(mapEltId, {
 			crs: crs,
 			minZoom: 0,
 			maxZoom: 6,
