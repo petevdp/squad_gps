@@ -53,8 +53,8 @@ def extract_route(args: ExtractRouteArgs):
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     segment_length = frame_count // config.NUM_PROCESSES
-    start_idx = int(args.segment_idx * segment_length) if config.MULTITHREADING else 0
-    end_idx = int((args.segment_idx + 1) * segment_length) if config.MULTITHREADING else frame_count
+    start_idx = int(args.segment_idx * segment_length)
+    end_idx = int((args.segment_idx + 1) * segment_length)
     if end_idx + segment_length > frame_count:
         end_idx = frame_count
 
