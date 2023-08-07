@@ -1,8 +1,10 @@
 from typing import NamedTuple
 
+import structlog
 
-class ProcessVideoArgs(NamedTuple):
+
+class ExtractRouteArgs(NamedTuple):
     map_name: str
     video_path: str
-    segment_idx: str
-    outfile_path: str
+    log: structlog.BoundLogger
+    segment_idx: int = 0

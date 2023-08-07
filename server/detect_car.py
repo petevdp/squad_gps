@@ -1,6 +1,6 @@
-import numpy as np
 import cv2
-from logger import log
+import numpy as np
+
 import config
 
 DEBUG = True
@@ -22,7 +22,7 @@ def get_warped_point(image, point, M):
 kp_cache = {}
 
 
-def locate_car(map_key, map, minimap, min_match_count=10):
+def locate_car(map_key, map, minimap, _log, min_match_count=10):
     map = map.copy()
     minimap = minimap.copy()
     cv2.cvtColor(map, cv2.COLOR_BGR2GRAY)
@@ -52,6 +52,7 @@ def locate_car(map_key, map, minimap, min_match_count=10):
         src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
         dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
         M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+        _log.info(f"found homography")
         matches_mask = mask.ravel().tolist()
         h, w, channels = minimap.shape
         inliers_src = src_pts[mask.ravel() == 1]
@@ -75,7 +76,7 @@ def locate_car(map_key, map, minimap, min_match_count=10):
             img3 = cv2.drawMatches(minimap, kp1, map, kp2, good, None, **draw_params)
             cv2.imshow('matches', img3), plt.show()
 
-        car = detect_car_in_minimap(minimap, x_min, x_max, y_min, y_max)
+        car = detect_car_in_minimap(minimap, x_min, x_max, y_min, y_max, _log)
         if car is None:
             return None
 
@@ -84,11 +85,11 @@ def locate_car(map_key, map, minimap, min_match_count=10):
         draw_point(map, car_on_map, (0, 0, 255))
         return int(car_on_map[0]), int(car_on_map[1])
     else:
-        log.info(f"Not enough matches are found - {len(good)}/{min_match_count}")
+        _log.info(f"Not enough matches are found - {len(good)}/{min_match_count}")
         matches_mask = None
 
 
-def detect_car_in_minimap(image, x_min, x_max, y_min, y_max):
+def detect_car_in_minimap(image, x_min, x_max, y_min, y_max, _log):
     image = image.copy()
     rect_mask = np.zeros_like(image)
     cv2.rectangle(rect_mask, (x_min, y_min), (x_max, y_max), (255, 255, 255), -1)
@@ -102,7 +103,7 @@ def detect_car_in_minimap(image, x_min, x_max, y_min, y_max):
 
     # Find contours of the yellow regions
     contours, _ = cv2.findContours(yellow_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    log.info(f"%s yellow regions found", len(contours))
+    _log.info(f"%s yellow regions found", len(contours))
     if len(contours) == 0:
         return None
     # Find the largest contour
