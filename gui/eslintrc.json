@@ -16,6 +16,7 @@
 	"rules": {
 		"prettier/prettier": "error",
 		"es6": true,
-		"comments": true
+		"comments": true,
+		"max-len": 240
 	}
 }

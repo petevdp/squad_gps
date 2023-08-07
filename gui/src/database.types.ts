@@ -1,10 +1,4 @@
-export type Json =
-	| string
-	| number
-	| boolean
-	| null
-	| { [key: string]: Json | undefined }
-	| Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export interface Database {
 	public: {
@@ -12,22 +6,28 @@ export interface Database {
 			route_uploads: {
 				Row: {
 					created_at: string | null
+					map_name: string
 					original_filename: string
 					route_id: string
+					route_name: string
 					status: string
 					upload_id: string
 				}
 				Insert: {
 					created_at?: string | null
+					map_name: string
 					original_filename: string
 					route_id: string
+					route_name: string
 					status?: string
 					upload_id: string
 				}
 				Update: {
 					created_at?: string | null
+					map_name?: string
 					original_filename?: string
 					route_id?: string
+					route_name?: string
 					status?: string
 					upload_id?: string
 				}

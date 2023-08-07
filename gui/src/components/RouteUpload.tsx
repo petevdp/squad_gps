@@ -1,13 +1,4 @@
-import {
-	Component,
-	createEffect,
-	createResource,
-	createSignal,
-	getOwner,
-	onCleanup,
-	onMount,
-	Show,
-} from 'solid-js'
+import { Component, createEffect, createResource, createSignal, getOwner, on, onCleanup, Show } from 'solid-js'
 
 import * as SB from '../supabase'
 import { FileInput, SelectInput, TextInput } from './Input'
@@ -20,10 +11,11 @@ import { Guarded } from './Guarded'
 import { DbRoute, MAP_NAMES } from '../types'
 import { RealtimeChannel } from '@supabase/supabase-js'
 
+export type RouteParams = Omit<DbRoute, 'created_at' | 'updated_at' | 'path'>
+
 type FileUploadDetails = {
-	routeId: string
 	file: File
-	userId: string
+	route: DbRoute
 }
 
 type ProcessingStatus =
@@ -32,13 +24,17 @@ type ProcessingStatus =
 	  }
 	| {
 			type: 'inProgress'
+			routeUpload: RouteParams
+			file: File | null
 	  }
 	| {
 			type: 'uploaded'
+			routeUpload: DbRoute
 	  }
 	| {
 			type: 'success'
 			message: string
+			routeUpload: RouteParams
 	  }
 	| {
 			type: 'error'
@@ -51,26 +47,17 @@ type RouteUploadProps = {
 	map: string
 }
 
-type EditStatus =
-	| { status: 'new' }
-	| { status: 'initializing' }
-	| { status: 'initialized'; route: DbRoute }
-
 const RouteUpload: Component<RouteUploadProps> = (props) => {
-	const { progress, startFileUpload, group, deleteRoute, onSubmit } =
-		useRouteUpload(props.routeToEdit, props.map, props.closeModal)
+	const { progress, group, deleteRoute, onSubmit } = useRouteUpload(props.map, props.closeModal, props.routeToEdit)
 
 	const [categories] = createResource(
 		() =>
 			SB.sb
 				.from('categories')
 				.select('category')
-				.then((res) => res.data?.map((c) => c?.category)?.sort()) as Promise<
-				string[] | null
-			>
+				.then((res) => res.data?.map((c) => c?.category)?.sort()) as Promise<string[] | null>
 	)
-	const categoriesWithNew = () =>
-		(categories() ? ['New Category', ...categories()!] : []) as string[]
+	const categoriesWithNew = () => (categories() ? ['New Category', ...categories()!] : []) as string[]
 
 	const error = (): string | undefined => {
 		const _progress = progress()
@@ -78,18 +65,16 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 			return _progress.error
 		}
 	}
-	const isNewCategory = () => group.controls.category.value === 'New Category'
+	const isNewCategory = () => group.value.name === 'New Category'
+	const [focusNameinput, setFocusNameInput] = createSignal(false)
 
 	createEffect(() => {
-		if (!group.controls.name.value && group.controls.video.value) {
-			group.controls.name.setValue(
-				group.controls.video.value.name.replace(/.mp4$/, '')
-			)
+		if (!group.value.name && group.value.video) {
+			group.controls.name.setValue(group.value.video.name!.replace(/.mp4$/, ''))
+			setFocusNameInput(true)
 		}
 	})
 
-	// @ts-ignore
-	// @ts-ignore
 	return (
 		<div>
 			<Show when={['init', 'error'].includes(progress().type)}>
@@ -101,42 +86,20 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 					class="align-end flex flex-col"
 				>
 					<div class="grid grid-cols-2 gap-2">
-						<FileInput
-							label="Video"
-							control={group.controls.video}
-							class="w-max"
-							accept={'video/mp4'}
-						/>
+						<FileInput label="Video" control={group.controls.video} class="w-max" accept={'video/mp4'} />
 						<span class="col-span-2 flex">
-							<TextInput
-								class="flex-1"
-								label="Name"
-								control={group.controls.name}
-							/>
-							<TextInput
-								control={group.controls.timeOffset}
-								label="Offset(s)"
-								type="number"
-								class="w-28"
-							/>
+							<TextInput class="flex-1" label="Name" control={group.controls.name} focus={focusNameinput()} />
+							<TextInput control={group.controls.timeOffset} label="Offset(s)" type="number" class="w-28" />
 						</span>
 						<SelectInput
 							control={group.controls.vehicle}
 							label="Vehicle"
 							options={() => [...VEHICLES.map((v) => v.name).sort()]}
 						/>
-						<SelectInput
-							control={group.controls.map}
-							label="Map"
-							options={() => [...MAP_NAMES]}
-						/>
+						<SelectInput control={group.controls.map} label="Map" options={() => [...MAP_NAMES]} />
 						{/* hack to make sure the options are all set initially */}
 						<Show when={categoriesWithNew().length > 0}>
-							<SelectInput
-								control={group.controls.category}
-								label={'Category'}
-								options={categoriesWithNew}
-							/>
+							<SelectInput control={group.controls.category} label={'Category'} options={categoriesWithNew} />
 						</Show>
 						<Show when={isNewCategory()}>
 							<TextInput
@@ -188,9 +151,7 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 							...
 						</span>
 					</span>
-					<div class="p-2 font-light">
-						Uploading {group.controls.name.value}...
-					</div>
+					<div class="p-2 font-light">Uploading {group.controls.name.value}...</div>
 				</div>
 			</Show>
 			<Show when={progress().type === 'uploaded'}>
@@ -261,18 +222,11 @@ export const RouteUploadGuarded: Component<RouteUploadProps> = (props) => {
 	)
 }
 
-function useRouteUpload(
-	routeToEdit: Route | undefined,
-	map: string,
-	finish: () => void
-) {
+function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 	const [progress, setProgress] = createSignal<ProcessingStatus>({
 		type: 'init',
 	})
-	const [fileDetails, startFileUpload] = createSignal<FileUploadDetails | null>(
-		null
-	)
-	const uploadId = crypto.randomUUID()
+
 	let routeInsertChannel: RealtimeChannel | null = null
 	const owner = getOwner()
 
@@ -291,83 +245,81 @@ function useRouteUpload(
 		{ required: true }
 	)
 
-	onMount(async () => {
-		routeInsertChannel = SB.sb
-			.channel('route-upload-channel')
-			.on(
-				'postgres_changes',
+	createEffect(
+		on(progress, async (progress) => {
+			console.log('progress status changed', progress.type)
+			if (progress.type == 'inProgress') {
+				const uploadPath = `${progress.routeUpload.id}.mp4`
 				{
-					event: 'UPDATE',
-					schema: 'public',
-					table: 'route_uploads',
-					filter: 'upload_id=eq.' + uploadId,
-				},
-				(payload) => {
-					if (payload.new.status === 'success') {
-						setProgress({
-							type: 'success',
-							message: 'Video processing completed',
+					const { error, data: route } = await SB.sb.from('routes').upsert(progress.routeUpload).select().single()
+
+					if (progress.file) {
+						const uploaded = SB.sb.storage.from('route_uploads').upload(uploadPath, progress.file, {
+							upsert: true,
+							contentType: progress.file.type,
 						})
-					}
-					if (payload.new.status === 'error') {
-						setProgress({
-							type: 'error',
-							error: 'something went wrong while processing this upload',
-						})
+						const { error } = await uploaded
+
+						if (error) {
+							setProgress({ type: 'error', error: error.message })
+							return
+						} else {
+							setProgress({
+								type: 'uploaded',
+								routeUpload: route as DbRoute,
+							})
+						}
+					} else {
 					}
 				}
-			)
-			.subscribe()
-	})
-
-	createEffect(async () => {
-		const _fileDetails = fileDetails()
-		if (!_fileDetails) return
-		const uploadPath = `${uploadId}.mp4`
-		{
-			const { data, error } = await SB.sb.from('route_uploads').insert({
-				route_id: _fileDetails.routeId,
-				upload_id: uploadId,
-				original_filename: _fileDetails.file.name,
-			})
-			if (error) {
-				setProgress({ type: 'error', error: error.message })
-				return
 			}
-		}
+			if (progress.type === 'uploaded') {
+				console.log('subscribing to route extraction channel')
+				// we're assuming that the route extraction will not have completed by the time this channel is active
+				routeInsertChannel = SB.sb
+					.channel('route-extraction-channel-' + progress.routeUpload.id)
+					.on(
+						'postgres_changes',
+						{
+							event: 'UPDATE',
+							schema: 'public',
+							table: 'routes',
+							filter: 'id=eq.' + progress.routeUpload.id,
+						},
+						(payload) => {
+							if (payload.new.path) {
+								setProgress({
+									type: 'success',
+									message: 'Video processing completed',
+									routeUpload: payload.new as DbRoute,
+								})
+							}
+							if (payload.new.status === 'error') {
+								setProgress({
+									type: 'error',
+									error: 'something went wrong while processing this upload',
+								})
+							}
+						}
+					)
+					.subscribe()
+			}
 
-		{
-			const uploaded = SB.sb.storage
-				.from('route_uploads')
-				.upload(uploadPath, _fileDetails.file)
-			setProgress({
-				type: 'inProgress',
-				bytesUploaded: 0,
-				bytesTotal: _fileDetails.file.size,
-			})
-			const { error } = await uploaded
-			if (error) {
-				setProgress({ type: 'error', error: error.message })
-				return
+			if (progress.type === 'init' || progress.type === 'error') {
+				routeInsertChannel?.unsubscribe()
+				group.markReadonly(false)
 			} else {
-				setProgress({ type: 'uploaded' })
+				group.markReadonly(true)
 			}
-		}
-	})
-
-	createEffect(() => {
-		if (progress().type === 'init' || progress().type === 'error') {
-			group.markReadonly(false)
-		} else {
-			group.markReadonly(true)
-		}
-	})
+		})
+	)
 
 	onCleanup(() => {
 		routeInsertChannel?.unsubscribe()
 	})
 
 	async function onSubmit() {
+		if (!group.isValid) return
 		group.markReadonly(true)
 		const _file = group.controls.video.value
 		// check if the file is an mp4
@@ -377,76 +329,44 @@ function useRouteUpload(
 				? group.controls.newCategory.value
 				: group.controls.category.value
 
-		if (routeToEdit) {
-			const { data: route, error } = await SB.sb
-				.from('routes')
-				.update({
-					name: group.controls.name.value,
-					map_name: group.controls.map.value,
-					category: category,
-					vehicle: group.controls.vehicle.value,
-					offset: group.controls.timeOffset.value,
-				})
-				.eq('id', routeToEdit.id)
-			if (error) {
-				alert(error.message)
-				return
-			}
-			if (_file) {
-				startFileUpload({
-					routeId: routeToEdit.id,
-					userId: SB.session()!.user.id,
-					file: _file,
-				})
-			} else {
-				setProgress({ type: 'success', message: 'Route updated' })
-			}
-		} else {
-			if (!['init', 'error'].includes(progress().type) || !_file) {
-				console.error(
-					'Invalid state, should not be able to submit while uploading, or without a file'
-				)
-				return
-			}
-			const routeId = crypto.randomUUID()
-			const { error } = await SB.sb.from('routes').insert([
-				{
-					id: routeId,
-					name: group.controls.name.value,
-					map_name: group.controls.map.value,
-					author: SB.session()!.user.id,
-					category: category,
-					vehicle: group.controls.vehicle.value,
-					offset: group.controls.timeOffset.value,
-				},
-			])
-
-			if (error) {
-				console.error(error)
-				setProgress({ type: 'error', error: error.message })
-				return
-			}
-			startFileUpload({ routeId, userId: SB.session()!.user.id, file: _file })
+		const routeUpdateParams = {
+			name: group.value.name!,
+			map_name: group.value.map!,
+			category: category!,
+			vehicle: group.value.vehicle!,
+			offset: group.value.timeOffset!,
 		}
+
+		let author: string
+		// we opnly want to take ownership in the case that we're uploading a file, or this is a new route
+		if (!routeToEdit || _file) {
+			author = SB.session()!.user!.id
+		} else {
+			author = routeToEdit.metadata.author
+		}
+
+		const routeParams = {
+			...routeUpdateParams,
+			id: routeToEdit?.id || crypto.randomUUID(),
+			author,
+		} satisfies RouteParams
+
+		setProgress({
+			type: 'inProgress',
+			file: _file,
+			routeUpload: routeParams,
+		})
 	}
 
 	async function deleteRoute() {
-		if (!routeToEdit) return
+		if (!routeToEdit || progress().type !== 'init' || progress().type !== 'error') return
 		await Modal.prompt(
 			owner!,
 			null,
-			(_props) => (
-				<ConfirmDelete
-					routeName={routeToEdit!.name}
-					onCompleted={_props.onCompleted}
-				/>
-			),
+			(_props) => <ConfirmDelete routeName={routeToEdit!.name} onCompleted={_props.onCompleted} />,
 			false
 		)
-		const { data, error } = await SB.sb
-			.from('routes')
-			.delete()
-			.eq('id', routeToEdit.id)
+		const { data, error } = await SB.sb.from('routes').delete().eq('id', routeToEdit.id)
 		if (error) {
 			alert(error.message)
 			return
@@ -454,5 +374,5 @@ function useRouteUpload(
 		finish()
 	}
 
-	return { progress, startFileUpload, group, onSubmit, deleteRoute }
+	return { progress, group, onSubmit, deleteRoute }
 }

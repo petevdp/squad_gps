@@ -7,7 +7,7 @@
       "src": "/(.+)",
       "status": 307,
       "headers": {
-        "Location": "/"
+				"Location": "/:"
       }
     }
   ]

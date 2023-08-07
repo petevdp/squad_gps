@@ -29,6 +29,7 @@
   "dependencies": {
     "@solidjs/router": "^0.8.2",
     "@supabase/supabase-js": "^2.31.0",
+		"@techstark/opencv-js": "4.8.0-release.3",
     "@thisbeyond/solid-select": "^0.14.0",
     "@vercel/edge": "^0.3.4",
     "highlight.run": "^7.3.11",

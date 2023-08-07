@@ -1,18 +1,12 @@
 import { createOptions, Select } from '@thisbeyond/solid-select'
 import '@thisbeyond/solid-select/style.css'
-import {
-	Accessor,
-	Component,
-	createEffect,
-	createSignal,
-	mergeProps,
-	onMount,
-} from 'solid-js'
+import { Accessor, Component, createEffect, createSignal, mergeProps, onMount } from 'solid-js'
 import * as SF from 'solid-forms'
 import * as TE from 'tw-elements'
 
 type TextInputProps = {
 	control: SF.IFormControl
+	onRef?: (elt: HTMLInputElement) => void
 	label: string
 	type?: 'text' | 'password' | 'email' | 'number'
 	class?: string
@@ -35,6 +29,7 @@ export const TextInput: Component<TextInputProps> = (props) => {
 	createEffect(() => {
 		if (props.focus) {
 			ref.focus()
+			ref.setSelectionRange(0, ref.value.length)
 		}
 	})
 
@@ -42,7 +37,10 @@ export const TextInput: Component<TextInputProps> = (props) => {
 		<div class={'relative mb-3 ' + props.class} data-te-input-wrapper-init>
 			<input
 				type={_props.type || 'text'}
-				ref={ref}
+				ref={(r) => {
+					ref = r
+					if (props.onRef) props.onRef(r)
+				}}
 				id={id}
 				value={_props.control.value}
 				onChange={(e) => _props.control.setValue(e.currentTarget.value)}
@@ -73,10 +71,7 @@ export const FileInput: Component<FileInputProps> = (props) => {
 	const [focused, setFocused] = createSignal(false)
 	return (
 		<div class={'flex flex-row items-center ' + (props.class || '')}>
-			<label
-				for={id}
-				class="mr-2 inline-block text-neutral-700 dark:text-neutral-200"
-			>
+			<label for={id} class="mr-2 inline-block text-neutral-700 dark:text-neutral-200">
 				{props.label}
 			</label>
 			<input
