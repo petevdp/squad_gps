@@ -374,6 +374,7 @@ function useMapName(setMap: (mapName: MapName) => void, map: Accessor<MapName | 
 function useRoutes(mapName: Accessor<string | null>) {
 	let routeInsertChannel: RealtimeChannel
 	const [routesStore, setRoutes] = createStore<UploadedRoute[]>([])
+	const orderRoutes = (a: Route, b: Route) => a.name.localeCompare(b.name)
 	createEffect(async () => {
 		const _mapName = mapName()
 		if (mapName === null) return
@@ -389,10 +390,11 @@ function useRoutes(mapName: Accessor<string | null>) {
 			}
 
 			const routes = routeRecords.map((r, i) => convertDbRoute(r)).filter(filterRoute) as UploadedRoute[]
-			setRoutes(routes)
+			setRoutes(routes.sort(orderRoutes))
 		}
 
-		if (routeInsertChannel) await routeInsertChannel.unsubscribe()
+		await routeInsertChannel?.unsubscribe()
+
 		routeInsertChannel = SB.sb
 			.channel('routes-update-channel')
 			.on(
@@ -411,12 +413,12 @@ function useRoutes(mapName: Accessor<string | null>) {
 					const route = convertDbRoute(payload.new as DbRoute)
 					if (!filterRoute(route)) return
 					if (payload.eventType === 'INSERT') {
-						setRoutes((routes) => [...routes, route])
+						setRoutes((routes) => [...routes, route].sort(orderRoutes))
 					}
 					if (payload.eventType === 'UPDATE') {
 						let routeIdx = routesStore.findIndex((r) => r.id === route.id)
 						if (routeIdx === -1) {
-							setRoutes((routes) => [...routes, route])
+							setRoutes((routes) => [...routes, route].sort(orderRoutes))
 						} else {
 							setRoutes((r) => r.id == payload.new.id, route)
 						}
@@ -504,7 +506,6 @@ function useMap(
 	}
 
 	function setupMap(_mapName: string, mapId: string) {
-		// remove existing map data
 		S.map?.remove()
 
 		const bounds = [
