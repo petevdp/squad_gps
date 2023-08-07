@@ -572,6 +572,44 @@ function useMap(
 		).addTo(S.map)
 		S.comparisonMarkerGroup = new L.LayerGroup()
 		S.routeLayerGroups = new Map<string, L.LayerGroup>()
+
+		/*
+		 * it was very annoying trying to get mouseover and mouseout to work for line segments directly,
+		 * so we're doing this instead
+		 */
+		S.map.addEventListener('mousemove', (e) => {
+			let distanceThreshold = 50 / S.map.getZoom()
+			// brute force search for closest route
+			for (let route of filteredRouteEntries().filter((e) => e.state.enabled)) {
+				let shouldHover = false
+				for (let i = 0; i < route.path.length - 1; i++) {
+					const a = route.path[i]
+					const b = route.path[i + 1]
+					const closestPoint = findNearestPointOnLine(e.latlng.lng, e.latlng.lat, a.x, a.y, b.x, b.y)
+					const distance = Math.sqrt(
+						Math.pow(e.latlng.lat - closestPoint.y, 2) + Math.pow(e.latlng.lng - closestPoint.x, 2)
+					)
+					if (distance < distanceThreshold) {
+						// draw a marker at the mouse position for debugging
+						// const marker = L.circleMarker(e.latlng, {
+						// 	radius: 5,
+						// 	color: 'red',
+						// 	fillColor: 'red',
+						// 	fillOpacity: 1,
+						// })
+						// S.map.addLayer(marker)
+
+						shouldHover = true
+						break
+					}
+				}
+				if (shouldHover) {
+					setRouteElementHovered(route.id, true)
+				} else if (route.state.elementHovered) {
+					setRouteElementHovered(route.id, false)
+				}
+			}
+		})
 	}
 
 	function updateRouteLeafletElements(
@@ -602,12 +640,6 @@ function useMap(
 				line.on('click', (e) => {
 					const clickedTime = pointToInterpolatedTime(route.path, new L.Point(e.latlng.lng, e.latlng.lat))
 					setComparisonTime(clickedTime)
-				})
-				line.on('mouseover', () => {
-					setRouteElementHovered(route.id, true)
-				})
-				line.on('mouseout', () => {
-					setRouteElementHovered(route.id, false)
 				})
 				routeLayerGroup.addLayer(line).addTo(S.map)
 				const intervalsSinceA = Math.floor(a.time / INTERVAL)
@@ -659,16 +691,9 @@ function useMap(
 					S.routeLayerGroups.set(route.id, routeGroup)
 				}
 				routeGroup!.addLayer(marker)
-				S.comparisonMarkerGroup.addLayer(marker)
 			}
 		} else {
 			S.routeLayerGroups.delete(route.id)
-		}
-
-		if (!comparisonTime) {
-			S.comparisonMarkerGroup.eachLayer((l) => {
-				l.remove()
-			})
 		}
 	}
 
@@ -787,4 +812,16 @@ function pointToInterpolatedTime(path: Measurement[], point: L.Point): number | 
 		Math.pow(closestPoint.x - segmentStart.x, 2) + Math.pow(closestPoint.y - segmentStart.y, 2)
 	)
 	return Math.round(segmentStart.time + diffTime * (pointDiffMagnitude / diffMagnitude))
+}
+
+export function findNearestPointOnLine(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
+	const atob = { x: bx - ax, y: by - ay }
+	const atop = { x: px - ax, y: py - ay }
+	const len = atob.x * atob.x + atob.y * atob.y
+	let dot = atop.x * atob.x + atop.y * atob.y
+	const t = Math.min(1, Math.max(0, dot / len))
+
+	dot = (bx - ax) * (py - ay) - (by - ay) * (px - ax)
+
+	return { x: ax + atob.x * t, y: ay + atob.y * t }
 }
