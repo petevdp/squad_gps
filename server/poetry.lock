@@ -3065,8 +3065,8 @@ description = "Structured Logging for Python"
 optional = false
 python-versions = ">=3.7"
 files = [
-    { file = "structlog-23.1.0-py3-none-any.whl", hash = "sha256:79b9e68e48b54e373441e130fa447944e6f87a05b35de23138e475c05d0f7e0e" },
-    { file = "structlog-23.1.0.tar.gz", hash = "sha256:270d681dd7d163c11ba500bc914b2472d2b50a8ef00faa999ded5ff83a2f906b" },
+	{ file = "structlog-23.1.0-py3-none-any.whl", hash = "sha256:79b9e68e48b54e373441e130fa447944e6f87a05b35de23138e475c05d0f7e0e" },
+	{ file = "structlog-23.1.0.tar.gz", hash = "sha256:270d681dd7d163c11ba500bc914b2472d2b50a8ef00faa999ded5ff83a2f906b" },
 ]
 
 [package.extras]
@@ -3481,4 +3481,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "5d0a90b49c33ffbe194ae0b582f93b87a08776275ca6bbbabbcc042ef91ea158"
+content-hash = "8f85d4360d78a667f0b5e627dca823bb99c11906166ab8801894d9f21a1adccf"

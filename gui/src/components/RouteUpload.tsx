@@ -11,7 +11,7 @@ import { Guarded } from './Guarded'
 import { DbRoute, MAP_NAMES } from '../types'
 import { RealtimeChannel } from '@supabase/supabase-js'
 
-export type RouteParams = Omit<DbRoute, 'created_at' | 'updated_at' | 'path'>
+export type RouteParams = Omit<DbRoute, 'created_at' | 'updated_at' | 'path' | 'progress'>
 
 type FileUploadDetails = {
 	file: File
@@ -23,12 +23,12 @@ type ProcessingStatus =
 			type: 'init'
 	  }
 	| {
-			type: 'inProgress'
+			type: 'uploading'
 			routeUpload: RouteParams
 			file: File | null
 	  }
 	| {
-			type: 'uploaded'
+			type: 'inProgress'
 			routeUpload: DbRoute
 	  }
 	| {
@@ -48,7 +48,11 @@ type RouteUploadProps = {
 }
 
 const RouteUpload: Component<RouteUploadProps> = (props) => {
-	const { progress, group, deleteRoute, onSubmit } = useRouteUpload(props.map, props.closeModal, props.routeToEdit)
+	const { processingState, group, deleteRoute, onSubmit, progress } = useRouteUpload(
+		props.map,
+		props.closeModal,
+		props.routeToEdit
+	)
 
 	const [categories] = createResource(
 		() =>
@@ -60,7 +64,7 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 	const categoriesWithNew = () => (categories() ? ['New Category', ...categories()!] : []) as string[]
 
 	const error = (): string | undefined => {
-		const _progress = progress()
+		const _progress = processingState()
 		if (_progress.type === 'error') {
 			return _progress.error
 		}
@@ -77,7 +81,7 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 
 	return (
 		<div>
-			<Show when={['init', 'error'].includes(progress().type)}>
+			<Show when={['init', 'error'].includes(processingState().type)}>
 				<form
 					onsubmit={(e) => {
 						e.preventDefault()
@@ -140,7 +144,7 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 					</span>
 				</form>
 			</Show>
-			<Show when={progress().type === 'inProgress'}>
+			<Show when={processingState().type === 'uploading'}>
 				<div class="flex flex-row items-center">
 					<span
 						class="ml-2 inline-block h-4 w-4 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
@@ -154,7 +158,7 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 					<div class="p-2 font-light">Uploading {group.controls.name.value}...</div>
 				</div>
 			</Show>
-			<Show when={progress().type === 'uploaded'}>
+			<Show when={processingState().type === 'inProgress'}>
 				<span class="p-2">Upload completed</span>
 				<div class="flex flex-row items-center">
 					<span
@@ -165,12 +169,17 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 							Processing...
 						</span>
 					</span>
-					<div class="p-2 font-light">Extracting Route...</div>
+					<div class="flex w-full flex-col">
+						<div class="p-2 font-light">Extracting Route...</div>
+						<div class="h-1 w-full bg-neutral-200 dark:bg-neutral-600">
+							<div class="bg-primary h-1" style={`width: ${progress()}%`}></div>
+						</div>
+					</div>
 				</div>
 			</Show>
-			<Show when={progress().type === 'success'}>
+			<Show when={processingState().type === 'success'}>
 				<span class="flex flex-row justify-between">
-					<div class="p-2">{(progress() as { message: string }).message}</div>
+					<div class="p-2">{(processingState() as { message: string }).message}</div>
 					<button
 						type="button"
 						class="bg-primary-100 text-primary-700 hover:bg-primary-accent-100 focus:bg-primary-accent-100 active:bg-primary-accent-200 mr-2 inline-block rounded px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal transition duration-150 ease-in-out focus:outline-none focus:ring-0"
@@ -182,8 +191,8 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 					</button>
 				</span>
 			</Show>
-			<Show when={progress().type === 'error'}>
-				<div class="text-warning-700 p-2">Upload failed: ${error()}</div>
+			<Show when={processingState().type === 'error'}>
+				<div class="text-warning-700 p-2">Upload failed: {error()}</div>
 			</Show>
 		</div>
 	)
@@ -223,7 +232,7 @@ export const RouteUploadGuarded: Component<RouteUploadProps> = (props) => {
 }
 
 function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
-	const [progress, setProgress] = createSignal<ProcessingStatus>({
+	const [processingState, setProcessingState] = createSignal<ProcessingStatus>({
 		type: 'init',
 	})
 
@@ -244,28 +253,34 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 		},
 		{ required: true }
 	)
+	let processingTimeout: number | null = null
+	const [progress, setProgress] = createSignal<number>(0)
 
 	createEffect(
-		on(progress, async (progress) => {
-			console.log('progress status changed', progress.type)
-			if (progress.type == 'inProgress') {
-				const uploadPath = `${progress.routeUpload.id}.mp4`
+		on(processingState, async (_processingState) => {
+			console.log('progress status changed', _processingState.type)
+			if (_processingState.type == 'uploading') {
+				const uploadPath = `${_processingState.routeUpload.id}.mp4`
 				{
-					const { error, data: route } = await SB.sb.from('routes').upsert(progress.routeUpload).select().single()
+					const { error, data: route } = await SB.sb
+						.from('routes')
+						.upsert(_processingState.routeUpload)
+						.select()
+						.single()
 
-					if (progress.file) {
-						const uploaded = SB.sb.storage.from('route_uploads').upload(uploadPath, progress.file, {
+					if (_processingState.file) {
+						const uploaded = SB.sb.storage.from('route_uploads').upload(uploadPath, _processingState.file, {
 							upsert: true,
-							contentType: progress.file.type,
+							contentType: _processingState.file.type,
 						})
 						const { error } = await uploaded
 
 						if (error) {
-							setProgress({ type: 'error', error: error.message })
+							setProcessingState({ type: 'error', error: error.message })
 							return
 						} else {
-							setProgress({
-								type: 'uploaded',
+							setProcessingState({
+								type: 'inProgress',
 								routeUpload: route as DbRoute,
 							})
 						}
@@ -273,29 +288,41 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 					}
 				}
 			}
-			if (progress.type === 'uploaded') {
+			if (_processingState.type === 'inProgress') {
 				console.log('subscribing to route extraction channel')
+				//@ts-ignore
+				processingTimeout = setTimeout(() => {
+					setProcessingState({ type: 'error', error: 'Processing timed out' })
+				}, 1000 * 20)
 				// we're assuming that the route extraction will not have completed by the time this channel is active
 				routeInsertChannel = SB.sb
-					.channel('route-extraction-channel-' + progress.routeUpload.id)
+					.channel('route-extraction-channel-' + _processingState.routeUpload.id)
 					.on(
 						'postgres_changes',
 						{
 							event: 'UPDATE',
 							schema: 'public',
 							table: 'routes',
-							filter: 'id=eq.' + progress.routeUpload.id,
+							filter: 'id=eq.' + _processingState.routeUpload.id,
 						},
 						(payload) => {
+							if (payload.new.status == 'inProgress' && processingState().type == 'inProgress') {
+								processingTimeout && clearTimeout(processingTimeout)
+								//@ts-ignore
+								processingTimeout = setTimeout(() => {
+									setProcessingState({ type: 'error', error: 'Processing timed out' })
+								}, 1000 * 20)
+								setProgress(payload.new.progress)
+							}
 							if (payload.new.path) {
-								setProgress({
+								setProcessingState({
 									type: 'success',
 									message: 'Video processing completed',
 									routeUpload: payload.new as DbRoute,
 								})
 							}
 							if (payload.new.status === 'error') {
-								setProgress({
+								setProcessingState({
 									type: 'error',
 									error: 'something went wrong while processing this upload',
 								})
@@ -305,17 +332,28 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 					.subscribe()
 			}
 
-			if (progress.type === 'init' || progress.type === 'error') {
+			if (_processingState.type === 'init' || _processingState.type === 'error') {
+				//@ts-ignore
+				clearTimeout(processingTimeout)
 				routeInsertChannel?.unsubscribe()
 				group.markReadonly(false)
 			} else {
 				group.markReadonly(true)
+			}
+			if (_processingState.type === 'success') {
+				//@ts-ignore
+				clearTimeout(processingTimeout)
+				routeInsertChannel?.unsubscribe()
+				group.markReadonly(true)
+				finish()
 			}
 		})
 	)
 
 	onCleanup(() => {
 		routeInsertChannel?.unsubscribe()
+		//@ts-ignore
+		clearTimeout(processingTimeout)
 	})
 
 	async function onSubmit() {
@@ -349,17 +387,18 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 			...routeUpdateParams,
 			id: routeToEdit?.id || crypto.randomUUID(),
 			author,
+			status: 'inProgress',
 		} satisfies RouteParams
 
-		setProgress({
-			type: 'inProgress',
-			file: _file,
+		setProcessingState({
+			type: 'uploading',
 			routeUpload: routeParams,
+			file: _file,
 		})
 	}
 
 	async function deleteRoute() {
-		if (!routeToEdit || progress().type !== 'init' || progress().type !== 'error') return
+		if (!routeToEdit || processingState().type !== 'init' || processingState().type !== 'error') return
 		await Modal.prompt(
 			owner!,
 			null,
@@ -374,5 +413,5 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 		finish()
 	}
 
-	return { progress, group, onSubmit, deleteRoute }
+	return { processingState, progress, group, onSubmit, deleteRoute }
 }

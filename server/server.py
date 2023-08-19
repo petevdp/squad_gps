@@ -3,7 +3,8 @@ import os
 import sys
 
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
-from supabase import create_client, Client
+
+from server.supabase import supabase
 
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
@@ -11,8 +12,6 @@ sys.path.append(file_dir)
 from logger import log
 from extract_route import extract_route_multiprocessing
 import config
-
-supabase: Client = create_client(config.SUPABASE_URL, config.SUPABASE_SERVICE_KEY)
 
 app = FastAPI()
 
@@ -50,12 +49,12 @@ async def process(request: Request, background_tasks: BackgroundTasks):
     return {"message": "Started processing"}, 202
 
 
-@app.post('/heatbeat')
-async def heartbeat(request: Request):
+@app.post('/job_statuses')
+async def job_statuses(request: Request):
     if request.headers.get("Authorization") != f'Bearer {config.SHARED_SECRET_KEY}':
         raise HTTPException(status_code=401, detail="Invalid auth token")
-    log.info("Received heartbeat")
-    return {"message": "OK"}, 200
+
+    return {"uploads": [*routes_being_processed]}, 200
 
 
 async def process_video(data):
@@ -96,7 +95,7 @@ async def process_video(data):
             f.write(bytes)
         del bytes
 
-        measurements = extract_route_multiprocessing(map_name, video_path, _log)
+        measurements = extract_route_multiprocessing(route_id, map_name, video_path, _log)
 
         _log.info(f"extracted {len(measurements)} measurements ")
         if len(measurements) > 0:

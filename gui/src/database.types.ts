@@ -3,43 +3,6 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export interface Database {
 	public: {
 		Tables: {
-			route_uploads: {
-				Row: {
-					created_at: string | null
-					map_name: string
-					original_filename: string
-					route_id: string
-					route_name: string
-					status: string
-					upload_id: string
-				}
-				Insert: {
-					created_at?: string | null
-					map_name: string
-					original_filename: string
-					route_id: string
-					route_name: string
-					status?: string
-					upload_id: string
-				}
-				Update: {
-					created_at?: string | null
-					map_name?: string
-					original_filename?: string
-					route_id?: string
-					route_name?: string
-					status?: string
-					upload_id?: string
-				}
-				Relationships: [
-					{
-						foreignKeyName: 'route_uploads_route_id_fkey'
-						columns: ['route_id']
-						referencedRelation: 'routes'
-						referencedColumns: ['id']
-					},
-				]
-			}
 			routes: {
 				Row: {
 					author: string
@@ -50,6 +13,8 @@ export interface Database {
 					name: string
 					offset: number
 					path: Json | null
+					progress: number | null
+					status: string | null
 					vehicle: string
 				}
 				Insert: {
@@ -61,6 +26,8 @@ export interface Database {
 					name: string
 					offset?: number
 					path?: Json | null
+					progress?: number | null
+					status?: string | null
 					vehicle: string
 				}
 				Update: {
@@ -72,6 +39,8 @@ export interface Database {
 					name?: string
 					offset?: number
 					path?: Json | null
+					progress?: number | null
+					status?: string | null
 					vehicle?: string
 				}
 				Relationships: [

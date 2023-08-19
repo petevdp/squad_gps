@@ -1,14 +1,14 @@
 import { getOwner, onMount, Owner } from 'solid-js'
-import type { Mat } from '@techstark/opencv-js'
+import { Mat } from '@techstark/opencv-js'
 
-let cv: typeof import('@techstark/opencv-js')
+// @ts-ignore
+let cv: any
 
 async function getCV() {
-	let _cv = await import('@techstark/opencv-js')
-
 	// we have to do whatever the fuck this is to get the import working because javascript
 	//@ts-ignore
-	cv = await _cv.default
+	cv = await window.cv
+	console.log(cv.getBuildInformation())
 	return cv
 }
 
@@ -29,11 +29,18 @@ async function process() {
 	// await new Promise<void>((resolve) => {
 	// 	img.onload = () => resolve()
 	// })
-	const map = await loadImage('/maps/map-fullsize/Yehorivka.png')
-	const frame = await loadImage('/yeho-car3-1.png')
-	console.log('map: ', map)
+	// const minimap = await loadImage('/maps/map-fullsize/Yehorivka.png')
+	const minimap = await loadImage('/yeho-car3-1.png')
 
-	await locateCar(map, frame)
+	// await locateCar(map, frame)
+
+	const { kps: kpsMinimap, desc: descMinimap } = fastDetect(new cv.AKAZE(), minimap)
+	const outFrame = new cv.Mat()
+	cv.drawKeypoints(minimap, kpsMinimap, outFrame, new cv.Scalar(0, 255, 0, 1))
+	imShow('keypoints', outFrame)
+	minimap.delete()
+	console.log({ kpsMinimap, descMinimap })
+	return
 
 	// await imShow('base', map)
 	// // to gray scale
@@ -51,21 +58,17 @@ async function process() {
 	// cv.imshow(this.haarFaceImgRef.current, haarFaces)
 
 	// need to release them manually
-	map.delete()
-	frame.delete()
+	// map.delete()
+	minimap.delete()
 	// edges.delete()
 	// haarFaces.delete()
 }
 
-function fastDetect(fast: any, img: Mat) {
+function fastDetect(features2d: any, img: Mat) {
 	const kps = new cv.KeyPointVector()
 	const desc = new cv.Mat()
-	try {
-		fast.detectAndCompute(img, new cv.Mat(), kps, desc)
-	} catch (e) {
-		console.log(e)
-		throw e
-	}
+	features2d.detect(img, kps, new cv.Mat())
+	// features2d.compute(img, kps, desc)
 	return { kps, desc }
 }
 
@@ -80,17 +83,19 @@ async function locateCar(map: Mat, frame: Mat, minMatchCount = 10) {
 
 	await imShow('mapGray', mapGray)
 	await imShow('frameGray', frameGray)
+	map.delete()
+	frame.delete()
 
 	//@ts-ignore
-	const fast = new cv.BRIEF()
+	const akaze = new cv.SIFT()
 
-	const { kps: kpsFrame, desc: descFrame } = fastDetect(fast, frameGray)
-	const { kps: kpsMap, desc: descMap } = fastDetect(fast, mapGray)
+	const { kps: kpsFrame, desc: descFrame } = fastDetect(akaze, frameGray)
+	const { kps: kpsMap, desc: descMap } = fastDetect(akaze, mapGray)
 	const outFrame = new cv.Mat()
 	const outMap = new cv.Mat()
 
 	cv.drawKeypoints(frame, kpsFrame, outFrame, new cv.Scalar(0, 255, 0, 1))
-	cv.drawKeypoints(map, kpsMap, outMap, new cv.Scalar(0, 255, 0, 1))
+	// cv.drawKeypoints(map, kpsMap, outMap, new cv.Scalar(0, 255, 0, 1))
 	imShow('outFrame', outFrame)
 	imShow('outMap', outMap)
 
@@ -105,6 +110,10 @@ async function locateCar(map: Mat, frame: Mat, minMatchCount = 10) {
 	// // fast.knnMatch(desFrame, desMap, 2)
 	// cv.drawMatchesKnn()
 	console.log({ kpsMap, descMap, kpsFrame, descFrame })
+	window.kpsMap = kpsMap
+	window.descMap = descMap
+	window.kpsFrame = kpsFrame
+	window.descFrame = descFrame
 	// const matcher = new cv.DescriptorMatcher('FlannBased')
 	// console.log(matcher)
 }
@@ -134,7 +143,15 @@ export function OpencvJs() {
 	owner = getOwner()!
 	onMount(async () => {
 		await getCV()
-		await process()
+		try {
+			await process()
+		} catch (e) {
+			if (typeof e === 'number') {
+				throw cv.exceptionFromPtr(e)
+			} else {
+				throw e
+			}
+		}
 		window.scrollTo(0, document.body.scrollHeight)
 	})
 	return (
