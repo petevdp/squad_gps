@@ -1,17 +1,17 @@
-import { Component, createEffect, createResource, createSignal, getOwner, on, onCleanup, Show } from 'solid-js'
+import {Component, createEffect, createResource, createSignal, getOwner, on, onCleanup, Show} from 'solid-js'
 
 import * as SB from '../supabase'
-import { FileInput, SelectInput, TextInput } from './Input'
+import {FileInput, SelectInput, TextInput} from './Input'
 import VEHICLES from '../assets/vehicles.json'
 import * as Modal from './Modal'
 
 import * as SF from 'solid-forms'
-import { Route } from './RouteViewer'
-import { Guarded } from './Guarded'
-import { DbRoute, MAP_NAMES } from '../types'
-import { RealtimeChannel } from '@supabase/supabase-js'
+import {Route} from './RouteViewer'
+import {Guarded} from './Guarded'
+import {DbRoute, MAP_NAMES} from '../types'
+import {RealtimeChannel} from '@supabase/supabase-js'
 
-export type RouteParams = Omit<DbRoute, 'created_at' | 'updated_at' | 'path' | 'progress'>
+export type RouteParams = Omit<DbRoute, 'created_at' | 'updated_at' | 'path'>
 
 type FileUploadDetails = {
 	file: File
@@ -345,7 +345,6 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 				clearTimeout(processingTimeout)
 				routeInsertChannel?.unsubscribe()
 				group.markReadonly(true)
-				finish()
 			}
 		})
 	)
@@ -367,7 +366,7 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 				? group.controls.newCategory.value
 				: group.controls.category.value
 
-		const routeUpdateParams = {
+		const routeUpdateParams =
 			name: group.value.name!,
 			map_name: group.value.map!,
 			category: category!,
@@ -388,6 +387,8 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 			id: routeToEdit?.id || crypto.randomUUID(),
 			author,
 			status: 'inProgress',
+			// zero out progress in case this isn't the first time we're attempting to upload this route
+			progress: 0,
 		} satisfies RouteParams
 
 		setProcessingState({

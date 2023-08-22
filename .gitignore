@@ -10,3 +10,5 @@
 .vercel
 
 .idea/dataSources.xml
+/server/map_data/
+/server/downloads/

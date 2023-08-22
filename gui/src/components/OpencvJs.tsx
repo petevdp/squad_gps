@@ -21,7 +21,7 @@ async function process() {
 	// 	img.onload = () => resolve()
 	// })
 
-	// const blob = await fetch('/maps/maps-fullsize/Yehorivka.png').then((r) =>
+	// const blob = await fetch('/maps/maps_fullsize/Yehorivka.png').then((r) =>
 	// 	r.blob()
 	// )
 	//

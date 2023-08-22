@@ -2,23 +2,16 @@
 
 import math
 import multiprocessing as mp
-import os
-import sys
 from typing import NamedTuple
 
 import cv2
 import structlog
 
-import detect_car as dc
-
-file_dir = os.path.dirname(__file__)
-sys.path.append(file_dir)
-
-import config
-from logger import log
-import extract_map_data
-
-from server.supabase import supabase
+from . import config
+from . import detect_car as dc
+from . import extract_map_data
+from ._supabase import supabase
+from .logger import log
 
 
 class ExtractRouteArgs(NamedTuple):
@@ -38,20 +31,18 @@ def process_to_outputs(args: ExtractRouteArgs, outputs, progress_out):
 def report_progress(progress_updates, route_id):
     _log = log.bind(route_id=route_id)
     progress = 0
-    try:
-        while True:
-            progress += progress_updates.recv()
-            _log.info("Updating Progress", progress=progress)
-            supabase.from_("routes").update({"progress": progress, "status": "inProgress"}).eq("id", route_id).execute()
-    except EOFError:
-        pass
+    while (inc := progress_updates.recv()) is not None:
+        progress += inc
+        _log.info("Updating Progress", progress=progress)
+        supabase.from_("routes").update({"progress": progress, "status": "inProgress"}).eq("id", route_id).execute()
+    _log.info("Finished reporting progress")
 
 
 def extract_route_multiprocessing(route_id, map_name, video_path, _log):
     _log = log.bind(map_name=map_name, video_path=video_path)
     mgr = mp.Manager()
     outputs = mgr.list([None] * config.NUM_PROCESSES)
-    progress_in, progress_out = mp.Pipe()
+    progress_out, progress_in = mp.Pipe()
     report_progress_process = mp.Process(target=report_progress, args=(progress_out, route_id))
     report_progress_process.start()
 
@@ -68,7 +59,9 @@ def extract_route_multiprocessing(route_id, map_name, video_path, _log):
         p.close()
 
     _log.info(f"finished processing video")
+    progress_in.send(None)
     progress_in.close()
+    progress_out.close()
     report_progress_process.join()
     _log.info(f"finished reporting progress")
     report_progress_process.close()
@@ -87,7 +80,6 @@ def extract_route(args: ExtractRouteArgs, inc_progress):
     # if config.DEBUG:
     #     map_annotated = map.copy()
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
 
     segment_length = frame_count // config.NUM_PROCESSES
     start_idx = int(args.segment_idx * segment_length)
