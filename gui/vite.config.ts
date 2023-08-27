@@ -1,19 +1,20 @@
-import {ConfigEnv, defineConfig} from 'vite';
-import solidPlugin from 'vite-plugin-solid';
-import {execSync} from 'child_process';
+import {ConfigEnv, defineConfig} from 'vite'
+import glsl from 'vite-plugin-glsl'
+import solidPlugin from 'vite-plugin-solid'
+import {execSync} from 'child_process'
 // import devtools from 'solid-devtools/vite';
 
-export default ({mode}: ConfigEnv) => {
-	const commitDate = execSync('git log -1 --format=%cI').toString().trimEnd();
-	const branchName = execSync('git rev-parse --abbrev-ref HEAD').toString().trimEnd();
-	const commitHash = execSync('git rev-parse HEAD').toString().trimEnd();
-	const lastCommitMessage = execSync('git show -s --format=%s').toString().trimEnd();
+export default ({ mode }: ConfigEnv) => {
+	const commitDate = execSync('git log -1 --format=%cI').toString().trimEnd()
+	const branchName = execSync('git rev-parse --abbrev-ref HEAD').toString().trimEnd()
+	const commitHash = execSync('git rev-parse HEAD').toString().trimEnd()
+	const lastCommitMessage = execSync('git show -s --format=%s').toString().trimEnd()
 
-	process.env.VITE_GIT_COMMIT_DATE = commitDate;
-	process.env.VITE_GIT_BRANCH_NAME = branchName;
-	process.env.VITE_GIT_COMMIT_HASH = commitHash;
-	process.env.VITE_GIT_LAST_COMMIT_MESSAGE = lastCommitMessage;
-	process.env.VITE_ENVIRONMENT = mode;
+	process.env.VITE_GIT_COMMIT_DATE = commitDate
+	process.env.VITE_GIT_BRANCH_NAME = branchName
+	process.env.VITE_GIT_COMMIT_HASH = commitHash
+	process.env.VITE_GIT_LAST_COMMIT_MESSAGE = lastCommitMessage
+	process.env.VITE_ENVIRONMENT = mode
 	return defineConfig({
 		plugins: [
 			/*
@@ -22,6 +23,7 @@ export default ({mode}: ConfigEnv) => {
 			*/
 			// devtools(),
 			solidPlugin(),
+			glsl(),
 		],
 		server: {
 			port: 3000,
@@ -29,6 +31,5 @@ export default ({mode}: ConfigEnv) => {
 		build: {
 			target: 'esnext',
 		},
-	});
+	})
 }
-

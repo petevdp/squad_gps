@@ -1,15 +1,15 @@
-import {Component, createEffect, createResource, createSignal, getOwner, on, onCleanup, Show} from 'solid-js'
+import { Component, createEffect, createResource, createSignal, getOwner, on, onCleanup, Show } from 'solid-js'
 
 import * as SB from '../supabase'
-import {FileInput, SelectInput, TextInput} from './Input'
+import { FileInput, SelectInput, TextInput } from './Input'
 import VEHICLES from '../assets/vehicles.json'
 import * as Modal from './Modal'
 
 import * as SF from 'solid-forms'
-import {Route} from './RouteViewer'
-import {Guarded} from './Guarded'
-import {DbRoute, MAP_NAMES} from '../types'
-import {RealtimeChannel} from '@supabase/supabase-js'
+import { Route } from './RouteViewer'
+import { Guarded } from './Guarded'
+import { DbRoute, MAP_NAMES } from '../types'
+import { RealtimeChannel } from '@supabase/supabase-js'
 
 export type RouteParams = Omit<DbRoute, 'created_at' | 'updated_at' | 'path'>
 
@@ -366,7 +366,7 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 				? group.controls.newCategory.value
 				: group.controls.category.value
 
-		const routeUpdateParams =
+		const routeUpdateParams = {
 			name: group.value.name!,
 			map_name: group.value.map!,
 			category: category!,

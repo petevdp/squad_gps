@@ -11,6 +11,7 @@ import { UpdatePasswordPage } from './UpdatePassword'
 import * as SB from '../supabase'
 import { ForgotPasswordPage } from './ForgotPassword'
 import { OpencvJs } from './OpencvJs'
+import { ImageTracker } from './ImageTracker'
 
 const App: Component = () => {
 	onMount(() => {
@@ -44,6 +45,7 @@ const App: Component = () => {
 				<Route path="/login" component={LoginPage} />
 				<Route path="/update_password" component={UpdatePasswordPage} />
 				<Route path="/forgot_password" component={ForgotPasswordPage} />
+				<Route path="/image_tracker" component={ImageTracker} />
 			</Routes>
 		</>
 	)
