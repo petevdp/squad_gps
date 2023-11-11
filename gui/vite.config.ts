@@ -1,7 +1,7 @@
-import {ConfigEnv, defineConfig} from 'vite'
+import { ConfigEnv, defineConfig } from 'vite'
 import glsl from 'vite-plugin-glsl'
 import solidPlugin from 'vite-plugin-solid'
-import {execSync} from 'child_process'
+import { execSync } from 'child_process'
 // import devtools from 'solid-devtools/vite';
 
 export default ({ mode }: ConfigEnv) => {

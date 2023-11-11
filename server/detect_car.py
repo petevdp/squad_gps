@@ -20,11 +20,17 @@ def get_warped_point(image, point, M):
 kp_cache = {}
 
 
-def locate_car(minimap, map_keypoints, map_descriptors, _log, min_match_count=10):
+def locate_car(frame, bounding_box, map_keypoints, map_descriptors, _log, min_match_count=10):
     sift = cv2.SIFT_create()
+
+    # apply bounding box if we have one
+    if bounding_box is not None:
+        x_min, x_max, y_min, y_max = bounding_box
+        frame = frame[y_min:y_max, x_min:x_max]
+
     # find the keypoints and descriptors with SIFT
-    minimap_keypoints, minimap_descriptors = sift.detectAndCompute(minimap, None)
-    minimap_h, minimap_w, minimap_channels = minimap.shape
+    minimap_keypoints, minimap_descriptors = sift.detectAndCompute(frame, None)
+    minimap_h, minimap_w, minimap_channels = frame.shape
 
     FLANN_INDEX_KDTREE = 1
     index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
@@ -44,22 +50,29 @@ def locate_car(minimap, map_keypoints, map_descriptors, _log, min_match_count=10
         matches_mask = mask.ravel().tolist()
         inliers_src = src_pts[mask.ravel() == 1]
 
-        # get bounding box for minimap inliers
-        x_min = int(np.min(inliers_src[:, 0, 0]))
-        x_max = int(np.max(inliers_src[:, 0, 0]))
-        y_min = int(np.min(inliers_src[:, 0, 1]))
-        y_max = int(np.max(inliers_src[:, 0, 1]))
+        if bounding_box is None:
+            # get bounding box for minimap inliers
+            bounding_box = (
+                int(np.min(inliers_src[:, 0, 0])),
+                int(np.max(inliers_src[:, 0, 0])),
+                int(np.min(inliers_src[:, 0, 1])),
+                int(np.max(inliers_src[:, 0, 1]))
+            )
 
-        car = detect_car_in_minimap(minimap, x_min, x_max, y_min, y_max, _log)
+        # draw bounding box
+        x_min, x_max, y_min, y_max = bounding_box
+
+        car = detect_car_in_minimap(frame, x_min, x_max, y_min, y_max, _log)
         if car is None:
-            return None
+            return None, None
 
         # closest = kp2[good[nearest[0]].trainIdx]
         car_on_map = cv2.perspectiveTransform(np.float32([car]).reshape(-1, 1, 2), M)[0][0]
-        return int(car_on_map[0]), int(car_on_map[1])
+        return (int(car_on_map[0]), int(car_on_map[1])), bounding_box
     else:
         _log.info(f"Not enough matches are found - {len(good)}/{min_match_count}")
         matches_mask = None
+        return None, None
 
 
 def detect_car_in_minimap(image, x_min, x_max, y_min, y_max, _log):

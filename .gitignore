@@ -12,3 +12,11 @@
 .idea/dataSources.xml
 /server/map_data/
 /server/downloads/
+/.idea/.name
+/.idea/squad_gps2.iml
+/downloads/273c7d54-75ca-4630-b8c6-69627deb0df9.mp4
+/downloads/337beb58-dc6c-4e71-9c98-1013118130be.mp4
+/downloads/77255c7b-e2ac-4aee-b1bc-fb6f9d432895.mp4
+/downloads/b5a5a7f6-c7aa-4aa9-a87c-26c9e26c6108.mp4
+/downloads/cf5a2f40-26ab-41e9-b766-7162df0731de.mp4
+*/cmake-build-debug/*
