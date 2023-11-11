@@ -20,3 +20,5 @@
 /downloads/b5a5a7f6-c7aa-4aa9-a87c-26c9e26c6108.mp4
 /downloads/cf5a2f40-26ab-41e9-b766-7162df0731de.mp4
 */cmake-build-debug/*
+/include/
+/cli_processor/
