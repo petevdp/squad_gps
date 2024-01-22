@@ -1,22 +1,28 @@
-import {Component, createSignal, For, onMount} from "solid-js";
-import {DbRoute} from "../types";
-import * as SB from "../supabase";
-import {A} from "@solidjs/router";
-import {Guarded} from "./Guarded";
+import { Component, createSignal, For, onMount } from 'solid-js'
+import { DbRoute } from '../types'
+import { pb } from '../pocketbase'
+import { A } from '@solidjs/router'
+import { Guarded } from './Guarded'
+import { RecordModel } from 'pocketbase'
 
 const RoutesTable: Component = () => {
-
-	const [routes, setRoutes] = createSignal<DbRoute[]>([]);
+	const [routes, setRoutes] = createSignal<DbRoute[]>([])
 	onMount(async () => {
-		const {data: _routes, error} = await SB.sb.from("routes").select("*").eq("author", SB.session()!.user.id);
-		if (error) {
-			console.error(error);
-			return;
+		// const {data: _routes, error} = await SB.sb.from("routes").select("*").eq("author", SB.session()!.user.id);
+		let data: RecordModel[]
+		try {
+			data = await pb.collection('routes').getFullList({ filter: `author = ${pb.authStore.model!.id}` })
+		} catch (e) {
+			console.error(e)
+			return
 		}
-
-		setRoutes(_routes);
+		console.log({ data })
 	})
-	const header = (label: string) => <th scope="col" class="px-6 py-4">{label}</th>
+	const header = (label: string) => (
+		<th scope="col" class="px-6 py-4">
+			{label}
+		</th>
+	)
 
 	return (
 		<div class="flex flex-col">
@@ -25,26 +31,29 @@ const RoutesTable: Component = () => {
 					<div class="overflow-hidden">
 						<table class="min-w-full text-left text-sm font-light">
 							<thead class="border-b font-medium dark:border-neutral-500">
-							<tr>
-								{header("name")}
-								{header("map")}
-								{header("category")}
-								{header("vehicle")}
-							</tr>
+								<tr>
+									{header('name')}
+									{header('map')}
+									{header('category')}
+									{header('vehicle')}
+								</tr>
 							</thead>
 							<tbody>
-							<For each={routes()}>{(route) => {
-								return (
-									<A href={"/routes/" + route.id}
-										 class="border-b transition duration-300 ease-in-out hover:bg-neutral-100 dark:border-neutral-500 dark:hover:bg-neutral-600">
-										<td class="whitespace-nowrap px-6 py-4 font-medium">{route.name}</td>
-										<td class="whitespace-nowrap px-6 py-4">{route.map_name}</td>
-										<td class="whitespace-nowrap px-6 py-4">{route.category}</td>
-										<td class="whitespace-nowrap px-6 py-4">{route.vehicle}</td>
-									</A>
-								);
-							}}
-							</For>
+								<For each={routes()}>
+									{(route) => {
+										return (
+											<A
+												href={'/routes/' + route.id}
+												class="border-b transition duration-300 ease-in-out hover:bg-neutral-100 dark:border-neutral-500 dark:hover:bg-neutral-600"
+											>
+												<td class="whitespace-nowrap px-6 py-4 font-medium">{route.name}</td>
+												<td class="whitespace-nowrap px-6 py-4">{route.map_name}</td>
+												<td class="whitespace-nowrap px-6 py-4">{route.category}</td>
+												<td class="whitespace-nowrap px-6 py-4">{route.vehicle}</td>
+											</A>
+										)
+									}}
+								</For>
 							</tbody>
 						</table>
 					</div>
@@ -54,5 +63,9 @@ const RoutesTable: Component = () => {
 	)
 }
 export const RoutesTableGuarded: Component = () => {
-	return <Guarded><RoutesTable/></Guarded>
+	return (
+		<Guarded>
+			<RoutesTable />
+		</Guarded>
+	)
 }

@@ -1,6 +1,20 @@
-import * as DB from './database.types'
+export type DbRouteParams = {
+	name: string
+	map_name: string
+	vehicle: string
+	category: string
+	offset: number
+	path?: any
+	progress: number
+	author: string
+	status: string
+}
 
-export type DbRoute = DB.Database['public']['Tables']['routes']['Row']
+export type DbRoute = {
+	id: string
+	created: string
+	updated: string
+} & DbRouteParams
 
 export const MAP_NAMES = [
 	'AlBasrah',

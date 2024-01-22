@@ -1,6 +1,6 @@
 import { Component, createEffect, createResource, createSignal, getOwner, on, onCleanup, Show } from 'solid-js'
 
-import * as SB from '../supabase'
+import { pb } from '../pocketbase'
 import { FileInput, SelectInput, TextInput } from './Input'
 import VEHICLES from '../assets/vehicles.json'
 import * as Modal from './Modal'
@@ -8,14 +8,21 @@ import * as Modal from './Modal'
 import * as SF from 'solid-forms'
 import { Route } from './RouteViewer'
 import { Guarded } from './Guarded'
-import { DbRoute, MAP_NAMES } from '../types'
-import { RealtimeChannel } from '@supabase/supabase-js'
-
-export type RouteParams = Omit<DbRoute, 'created_at' | 'updated_at' | 'path'>
+import { DbRoute, DbRouteParams, MAP_NAMES } from '../types'
+import { RecordModel } from 'pocketbase'
 
 type FileUploadDetails = {
 	file: File
 	route: DbRoute
+}
+
+export type RouteUpdateParams = {
+	name: string
+	map_name: string
+	vehicle: string
+	category: string
+	offset: number
+	path?: any
 }
 
 type ProcessingStatus =
@@ -24,7 +31,7 @@ type ProcessingStatus =
 	  }
 	| {
 			type: 'uploading'
-			routeUpload: RouteParams
+			routeUpload: RouteUpdateParams
 			file: File | null
 	  }
 	| {
@@ -34,7 +41,7 @@ type ProcessingStatus =
 	| {
 			type: 'success'
 			message: string
-			routeUpload: RouteParams
+			routeUpload: RouteUpdateParams
 	  }
 	| {
 			type: 'error'
@@ -54,13 +61,16 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 		props.routeToEdit
 	)
 
-	const [categories] = createResource(
-		() =>
-			SB.sb
-				.from('categories')
-				.select('category')
-				.then((res) => res.data?.map((c) => c?.category)?.sort()) as Promise<string[] | null>
+	const [categories] = createResource(() =>
+		pb
+			.collection('routes')
+			.getFullList({ fields: 'category', sort: 'category' })
+			.then((records) => [...new Set(records.map((r) => r.category as string))])
 	)
+	createEffect(() => {
+		console.log('categories: ', categories())
+	})
+
 	const categoriesWithNew = () => (categories() ? ['New Category', ...categories()!] : []) as string[]
 
 	const error = (): string | undefined => {
@@ -69,7 +79,7 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 			return _progress.error
 		}
 	}
-	const isNewCategory = () => group.value.name === 'New Category'
+	const isNewCategory = () => group.value.category === 'New Category'
 	const [focusNameinput, setFocusNameInput] = createSignal(false)
 
 	createEffect(() => {
@@ -119,7 +129,7 @@ const RouteUpload: Component<RouteUploadProps> = (props) => {
 							<button
 								type="button"
 								class="bg-danger hover:bg-danger-600  focus:bg-danger-600 active:bg-danger-700 mr-2 inline-block rounded px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#dc4c64] transition duration-150 ease-in-out hover:shadow-[0_8px_9px_-4px_rgba(220,76,100,0.3),0_4px_18px_0_rgba(220,76,100,0.2)] focus:shadow-[0_8px_9px_-4px_rgba(220,76,100,0.3),0_4px_18px_0_rgba(220,76,100,0.2)] focus:outline-none focus:ring-0 active:shadow-[0_8px_9px_-4px_rgba(220,76,100,0.3),0_4px_18px_0_rgba(220,76,100,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(220,76,100,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(220,76,100,0.2),0_4px_18px_0_rgba(220,76,100,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(220,76,100,0.2),0_4px_18px_0_rgba(220,76,100,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(220,76,100,0.2),0_4px_18px_0_rgba(220,76,100,0.1)]"
-								onclick={deleteRoute}
+								onclick={() => deleteRoute()}
 							>
 								Delete
 							</button>
@@ -236,7 +246,7 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 		type: 'init',
 	})
 
-	let routeInsertChannel: RealtimeChannel | null = null
+	let unsubRouteUpdated: (() => Promise<void>) | null = null
 	const owner = getOwner()
 
 	const group = SF.createFormGroup(
@@ -260,31 +270,75 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 		on(processingState, async (_processingState) => {
 			console.log('progress status changed', _processingState.type)
 			if (_processingState.type == 'uploading') {
-				const uploadPath = `${_processingState.routeUpload.id}.mp4`
 				{
-					const { error, data: route } = await SB.sb
-						.from('routes')
-						.upsert(_processingState.routeUpload)
-						.select()
-						.single()
+					let author: string
+					// we only want to take ownership in the case that we're uploading a file, or this is a new route
+					if (!routeToEdit || _processingState.file) {
+						author = pb.authStore.model!.id
+					} else {
+						author = routeToEdit.metadata.author
+					}
+
+					const route: DbRouteParams = {
+						..._processingState.routeUpload,
+						author,
+						status: _processingState.file ? 'pending' : 'success',
+						progress: 0,
+					}
+
+					const formData = new FormData()
+
+					for (let [key, value] of Object.entries(route)) {
+						formData.set(key, value?.toString())
+					}
 
 					if (_processingState.file) {
-						const uploaded = SB.sb.storage.from('route_uploads').upload(uploadPath, _processingState.file, {
-							upsert: true,
-							contentType: _processingState.file.type,
-						})
-						const { error } = await uploaded
+						formData.set('video', _processingState.file)
+					} else {
+					}
 
-						if (error) {
+					let exists = false
+
+					if (routeToEdit) {
+						// const uploaded = SB.sb.storage.from('route_uploads').upload(uploadPath, _processingState.file, {
+						// 	upsert: true,
+						// 	contentType: _processingState.file.type,
+						// })
+						let response: RecordModel
+						try {
+							response = await pb.collection('routes').update(routeToEdit.id, formData)
+						} catch (error: any) {
+							console.error(error)
 							setProcessingState({ type: 'error', error: error.message })
 							return
-						} else {
+						}
+
+						if (_processingState.file) {
 							setProcessingState({
 								type: 'inProgress',
-								routeUpload: route as DbRoute,
+								routeUpload: response as unknown as DbRoute,
+							})
+						} else {
+							setProcessingState({
+								type: 'success',
+								message: 'Route updated',
+								routeUpload: route,
 							})
 						}
 					} else {
+						let response: RecordModel
+						try {
+							response = await pb.collection('routes').create(formData)
+						} catch (error: any) {
+							console.error(error)
+							setProcessingState({ type: 'error', error: error.message })
+							return
+						}
+
+						setProcessingState({
+							type: 'inProgress',
+							routeUpload: response as unknown as DbRoute,
+						})
 					}
 				}
 			}
@@ -294,48 +348,37 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 				processingTimeout = setTimeout(() => {
 					setProcessingState({ type: 'error', error: 'Processing timed out' })
 				}, 1000 * 20)
-				// we're assuming that the route extraction will not have completed by the time this channel is active
-				routeInsertChannel = SB.sb
-					.channel('route-extraction-channel-' + _processingState.routeUpload.id)
-					.on(
-						'postgres_changes',
-						{
-							event: 'UPDATE',
-							schema: 'public',
-							table: 'routes',
-							filter: 'id=eq.' + _processingState.routeUpload.id,
-						},
-						(payload) => {
-							if (payload.new.status == 'inProgress' && processingState().type == 'inProgress') {
-								processingTimeout && clearTimeout(processingTimeout)
-								//@ts-ignore
-								processingTimeout = setTimeout(() => {
-									setProcessingState({ type: 'error', error: 'Processing timed out' })
-								}, 1000 * 20)
-								setProgress(payload.new.progress)
-							}
-							if (payload.new.path) {
-								setProcessingState({
-									type: 'success',
-									message: 'Video processing completed',
-									routeUpload: payload.new as DbRoute,
-								})
-							}
-							if (payload.new.status === 'error') {
-								setProcessingState({
-									type: 'error',
-									error: 'something went wrong while processing this upload',
-								})
-							}
-						}
-					)
-					.subscribe()
+				unsubRouteUpdated = await pb.collection('routes').subscribe(_processingState.routeUpload.id, (e) => {
+					console.log(e)
+					if (e.action !== 'update') return
+					if (e.record.status === 'inProgress' && processingState().type === 'inProgress') {
+						processingTimeout && clearTimeout(processingTimeout)
+						//@ts-ignore
+						processingTimeout = setTimeout(() => {
+							setProcessingState({ type: 'error', error: 'Processing timed out' })
+						}, 1000 * 20)
+						setProgress(e.record.progress)
+					}
+					if (e.record.status === 'success' && e.record.path) {
+						setProcessingState({
+							type: 'success',
+							message: 'Video processing completed',
+							routeUpload: e.record as unknown as DbRoute,
+						})
+					}
+					if (e.record.status === 'error') {
+						setProcessingState({
+							type: 'error',
+							error: 'something went wrong while processing this upload',
+						})
+					}
+				})
 			}
 
 			if (_processingState.type === 'init' || _processingState.type === 'error') {
 				//@ts-ignore
 				clearTimeout(processingTimeout)
-				routeInsertChannel?.unsubscribe()
+				unsubRouteUpdated && (await unsubRouteUpdated())
 				group.markReadonly(false)
 			} else {
 				group.markReadonly(true)
@@ -343,14 +386,14 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 			if (_processingState.type === 'success') {
 				//@ts-ignore
 				clearTimeout(processingTimeout)
-				routeInsertChannel?.unsubscribe()
+				unsubRouteUpdated && (await unsubRouteUpdated())
 				group.markReadonly(true)
 			}
 		})
 	)
 
 	onCleanup(() => {
-		routeInsertChannel?.unsubscribe()
+		unsubRouteUpdated && unsubRouteUpdated()
 		//@ts-ignore
 		clearTimeout(processingTimeout)
 	})
@@ -366,7 +409,7 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 				? group.controls.newCategory.value
 				: group.controls.category.value
 
-		const routeUpdateParams = {
+		const routeUpdateParams: RouteUpdateParams = {
 			name: group.value.name!,
 			map_name: group.value.map!,
 			category: category!,
@@ -374,43 +417,29 @@ function useRouteUpload(map: string, finish: () => void, routeToEdit?: Route) {
 			offset: group.value.timeOffset!,
 		}
 
-		let author: string
-		// we opnly want to take ownership in the case that we're uploading a file, or this is a new route
-		if (!routeToEdit || _file) {
-			author = SB.session()!.user!.id
-		} else {
-			author = routeToEdit.metadata.author
-		}
-
-		const routeParams = {
-			...routeUpdateParams,
-			id: routeToEdit?.id || crypto.randomUUID(),
-			author,
-			status: 'inProgress',
-			// zero out progress in case this isn't the first time we're attempting to upload this route
-			progress: 0,
-		} satisfies RouteParams
-
 		setProcessingState({
 			type: 'uploading',
-			routeUpload: routeParams,
+			routeUpload: routeUpdateParams,
 			file: _file,
 		})
 	}
 
 	async function deleteRoute() {
-		if (!routeToEdit || processingState().type !== 'init' || processingState().type !== 'error') return
+		if (!routeToEdit || (processingState().type !== 'init' && processingState().type !== 'error')) return
 		await Modal.prompt(
 			owner!,
 			null,
 			(_props) => <ConfirmDelete routeName={routeToEdit!.name} onCompleted={_props.onCompleted} />,
 			false
 		)
-		const { data, error } = await SB.sb.from('routes').delete().eq('id', routeToEdit.id)
-		if (error) {
-			alert(error.message)
-			return
+
+		let success = false
+		try {
+			success = await pb.collection('routes').delete(routeToEdit.id)
+		} catch (e) {
+			console.warn(e)
 		}
+		console.log({ success })
 		finish()
 	}
 

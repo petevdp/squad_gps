@@ -12,7 +12,7 @@ import {
 	Show,
 } from 'solid-js'
 import * as TE from 'tw-elements'
-import * as SB from '../supabase'
+import * as PB from '../pocketbase'
 import { Login } from './Login'
 
 let modalContainer: HTMLDivElement | null = null
@@ -36,8 +36,7 @@ export function ModalContainer() {
 		<div
 			ref={modalContainer!}
 			class={
-				'left-0 top-0 z-[1000] h-full w-full overflow-y-auto outline-none ' +
-				(activeElement() ? 'absolute' : 'hidden')
+				'left-0 top-0 z-[1000] h-full w-full overflow-y-auto outline-none ' + (activeElement() ? 'absolute' : 'hidden')
 			}
 			id="modal-container"
 			tabindex="-1"
@@ -57,10 +56,7 @@ export function ModalContainer() {
 								(title() ? 'justify-between' : 'justify-end')
 							}
 						>
-							<h5
-								class="text-xl font-medium leading-normal text-neutral-800 dark:text-neutral-200"
-								id="modalLabel"
-							>
+							<h5 class="text-xl font-medium leading-normal text-neutral-800 dark:text-neutral-200" id="modalLabel">
 								{title()}
 							</h5>
 							<button
@@ -77,11 +73,7 @@ export function ModalContainer() {
 									stroke="currentColor"
 									class="h-6 w-6"
 								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										d="M6 18L18 6M6 6l12 12"
-									/>
+									<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 								</svg>
 							</button>
 						</div>
@@ -98,10 +90,7 @@ export function ModalContainer() {
 
 type ModalProps = {
 	title: string | null
-	render: (
-		modalState: Accessor<boolean>,
-		setActive: (isActive: boolean) => void
-	) => JSXElement
+	render: (modalState: Accessor<boolean>, setActive: (isActive: boolean) => void) => JSXElement
 }
 
 export type ModalState = {
@@ -109,10 +98,7 @@ export type ModalState = {
 	setVisible: (visible: boolean) => void
 }
 
-export function addModal<T = boolean>(
-	props: ModalProps,
-	owner: Owner | undefined
-): ModalState {
+export function addModal<T = boolean>(props: ModalProps, owner: Owner | undefined): ModalState {
 	let current: { elt: HTMLSpanElement } | null = null
 	const _owner = owner || getOwner()
 	const isActive = () => activeElement() !== null && current === activeElement()
@@ -190,13 +176,11 @@ export async function prompt<T>(
 }
 
 export function ensureLoggedIn(owner: Owner, message: string) {
-	if (SB.session()) return Promise.resolve(true)
+	if (PB.loggedIn()) return Promise.resolve(true)
 	return prompt(
 		owner,
 		'Log In',
-		(props: CanPrompt<boolean>) => (
-			<Login onCompleted={props.onCompleted} message={message} />
-		),
+		(props: CanPrompt<boolean>) => <Login onCompleted={props.onCompleted} message={message} />,
 		true
 	)
 }

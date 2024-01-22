@@ -2,10 +2,10 @@ import asyncio
 import os
 
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
+from server.route_extraction.extract_route import extract_route_multiprocessing
 
-from . import config
+import config
 from ._supabase import supabase
-from .extract_route import extract_route_multiprocessing
 from .logger import log
 
 app = FastAPI()

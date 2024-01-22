@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 
-import cv2
 import math
 import multiprocessing as mp
-import structlog
 from typing import NamedTuple
+
+import cv2
+import structlog
 
 from . import config
 from . import detect_car as dc
 from . import extract_map_data
-from ._supabase import supabase
+from ._pocketbase import pb
 from .logger import log
 
 
@@ -33,7 +34,8 @@ def report_progress(progress_updates, route_id):
     while (inc := progress_updates.recv()) is not None:
         progress += inc
         _log.info("Updating Progress", progress=progress)
-        supabase.from_("routes").update({"progress": progress, "status": "inProgress"}).eq("id", route_id).execute()
+        # supabase.from_("routes").update({"progress": progress, "status": "inProgress"}).eq("id", route_id).execute()
+        pb.collection('routes').update(route_id, {"progress": progress, "status": "inProgress"})
     _log.info("Finished reporting progress")
 
 

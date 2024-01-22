@@ -15,14 +15,14 @@ import * as L from 'leaflet'
 import tailwindColors from 'tailwindcss/colors'
 import { useSearchParams } from '@solidjs/router'
 import { createStore } from 'solid-js/store'
-import * as SB from '../supabase'
 import { MultiSelectInput, SelectInput, TextInput } from './Input'
+import * as PB from '../pocketbase'
+import { pb } from '../pocketbase'
 import { createFormControl, createFormGroup, IFormControl } from 'solid-forms'
 import * as Modal from './Modal'
 import { RouteUploadGuarded } from './RouteUpload'
 import { Login } from './Login'
 import { Guarded } from './Guarded'
-import { RealtimeChannel } from '@supabase/supabase-js'
 import { DbRoute, MAP_NAMES, MapName } from '../types'
 
 type ButtonColor = {
@@ -270,7 +270,7 @@ function RouteViewer() {
 				</ul>
 			</div>
 			<div class="absolute right-2 top-2" style="z-index: 500;">
-				<Show when={!SB.session()}>
+				<Show when={!PB.loggedIn()}>
 					<button
 						class="bg-primary hover:bg-primary-600 focus:bg-primary-600 active:bg-primary-700 mr-2 inline-block rounded px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
 						onClick={() => loginModal.setVisible(true)}
@@ -278,11 +278,11 @@ function RouteViewer() {
 						Log In
 					</button>
 				</Show>
-				<Show when={SB.session()}>
+				<Show when={PB.loggedIn()}>
 					<button
 						class="secondary bg-secondary hover:bg-secondary-600 focus:bg-secondary-600 active:bg-secondary-700 mr-2 inline-block rounded px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
 						onClick={() => {
-							SB.logOut()
+							PB.logOut()
 						}}
 					>
 						Log Out
@@ -384,70 +384,68 @@ function useMapName(setMap: (mapName: MapName) => void, map: Accessor<MapName | 
 }
 
 function useRoutes(mapName: Accessor<string | null>) {
-	let routeInsertChannel: RealtimeChannel
-	const [routesStore, setRoutes] = createStore<UploadedRoute[]>([])
+	let unsubscribeRoutes: (() => Promise<void>) | null = null
+	const [routesStore, setRoutesStore] = createStore<UploadedRoute[]>([])
 	const orderRoutes = (a: Route, b: Route) => a.name.localeCompare(b.name)
 	let changingMap = false
 	createEffect(
 		on(mapName, async (mapName) => {
 			changingMap = true
-			setRoutes([])
+			setRoutesStore([])
 			if (mapName === null) return
 
 			const filterRoute = (route: Route): route is UploadedRoute => !!route.path && route.path.length > 0
 
 			{
-				const { data: routeRecords, error } = await SB.sb.from('routes').select('*').eq('map_name', mapName)
-
-				if (error) {
-					console.error(error)
+				// const { data: routeRecords, error } = await SB.sb.from('routes').select('*').eq('map_name', mapName)
+				let routeRecords: DbRoute[]
+				try {
+					routeRecords = await PB.pb.collection('routes').getFullList({ filter: `map_name = '${mapName}'` })
+				} catch (e) {
+					console.error(e)
 					return
 				}
+				console.log(routeRecords)
 
 				const routes = routeRecords.map((r, i) => convertDbRoute(r)).filter(filterRoute) as UploadedRoute[]
-				setRoutes(routes.sort(orderRoutes))
+				setRoutesStore(routes)
 			}
 
-			await routeInsertChannel?.unsubscribe()
+			unsubscribeRoutes && (await unsubscribeRoutes())
+			unsubscribeRoutes = await PB.pb.collection('routes').subscribe('*', (e) => {})
 
-			routeInsertChannel = SB.sb
-				.channel('routes-update-channel')
-				.on(
-					'postgres_changes',
-					{
-						event: '*',
-						schema: 'public',
-						table: 'routes',
-						filter: 'map_name=eq.' + mapName,
-					},
-					(payload) => {
-						if (changingMap) return
-						if (payload.eventType === 'DELETE') {
-							setRoutes(routesStore.filter((r) => r.id !== payload.old.id))
-							return
-						}
-						const route = convertDbRoute(payload.new as DbRoute)
-						if (!filterRoute(route)) return
-						if (payload.eventType === 'INSERT') {
-							setRoutes((routes) => [...routes, route].sort(orderRoutes))
-						}
-						if (payload.eventType === 'UPDATE') {
-							let routeIdx = routesStore.findIndex((r) => r.id === route.id)
-							if (routeIdx === -1) {
-								setRoutes((routes) => [...routes, route].sort(orderRoutes))
-							} else {
-								setRoutes((r) => r.id == payload.new.id, route)
-							}
-						}
-					}
-				)
-				.subscribe()
+			pb.collection('routes').subscribe('*', (e) => {
+				if (changingMap || e.record.map_name !== mapName) return
+				if (e.action === 'delete') {
+					setRoutesStore(routesStore.filter((r) => r.id !== e.record.id))
+					return
+				}
+				const route = convertDbRoute(e.record as unknown as DbRoute) as UploadedRoute
+				if (!filterRoute(route)) return
+
+				let idx: number
+				if (e.action === 'create') {
+					idx = routesStore.length
+				} else if (e.action === 'update') {
+					idx = routesStore.findIndex((r) => r.id === route.id)
+					if (idx === -1) idx = routesStore.length
+				} else {
+					throw new Error('unknown action: ' + e.action)
+				}
+
+				if (idx === routesStore.length) {
+					setRoutesStore([...routesStore, route].sort(orderRoutes))
+				} else {
+					setRoutesStore(idx, route)
+				}
+			})
+
 			changingMap = false
 		})
 	)
 
 	const setRouteEnabled = (id: string, enabled: boolean) => {
-		setRoutes(
+		setRoutesStore(
 			(r) => r.id === id,
 			'state',
 			'enabled',
@@ -456,7 +454,7 @@ function useRoutes(mapName: Accessor<string | null>) {
 	}
 
 	const setRouteToolbarEntryHovered = (id: string, hovered: boolean) => {
-		setRoutes(
+		setRoutesStore(
 			(r) => r.id === id,
 			'state',
 			'toolbarEntryHovered',
@@ -465,7 +463,7 @@ function useRoutes(mapName: Accessor<string | null>) {
 	}
 
 	const setRouteElementHovered = (id: string, hovered: boolean) => {
-		setRoutes(
+		setRoutesStore(
 			(r) => r.id === id,
 			'state',
 			'elementHovered',
@@ -579,19 +577,16 @@ function useMap(
 		S.map.getPane('background')!.style.zIndex = '0'
 
 		// https://zxyydvtjfwtliqnhfrtt.supabase.co/storage/v1/object/public/map_tiles/map-tiles/Fools_Road_Minimap/0/0/0.png
-		new L.TileLayer(
-			`${'https://zxyydvtjfwtliqnhfrtt.supabase.co'}/storage/v1/object/public/map_tiles/map-tiles/${_mapName}_Minimap/{z}/{x}/{y}.png`,
-			{
-				tms: false,
-				maxNativeZoom: 4,
-				zoomOffset: 0,
-				// scale tiles to match minimap width and height
-				tileSize: 256,
-				pane: 'background',
-				// @ts-ignore
-				bounds: baseBounds,
-			}
-		).addTo(S.map)
+		new L.TileLayer(`/maps/map-tiles/${_mapName}_Minimap/{z}/{x}/{y}.png`, {
+			tms: false,
+			maxNativeZoom: 4,
+			zoomOffset: 0,
+			// scale tiles to match minimap width and height
+			tileSize: 256,
+			pane: 'background',
+			// @ts-ignore
+			bounds: baseBounds,
+		}).addTo(S.map)
 		S.comparisonMarkerGroup = new L.LayerGroup()
 		S.routeLayerGroups = new Map<string, L.LayerGroup>()
 
@@ -780,7 +775,7 @@ function convertDbRoute(dbRoute: DbRoute) {
 			category: dbRoute.category,
 			description: 'placeholder',
 			author: dbRoute.author,
-			submitDate: dbRoute.created_at!,
+			submitDate: dbRoute.created!,
 			vehicle: dbRoute.vehicle,
 			timeOffset: dbRoute.offset,
 		},

@@ -1,17 +1,10 @@
 import type { Component } from 'solid-js'
 import { onMount } from 'solid-js'
 import { Navigate, Route, Routes, useSearchParams } from '@solidjs/router'
-import { DrawTool } from './draw_tool'
 import { GuardedRouteViewer as RouteViewer } from './RouteViewer'
 import { LoginPage } from './Login'
 import { ModalContainer } from './Modal'
 import { RoutesTableGuarded as RoutesTable } from './RoutesTable'
-import { UpdatePasswordPage } from './UpdatePassword'
-
-import * as SB from '../supabase'
-import { ForgotPasswordPage } from './ForgotPassword'
-import { OpencvJs } from './OpencvJs'
-import { ImageTracker } from './ImageTracker'
 
 const App: Component = () => {
 	onMount(() => {
@@ -38,14 +31,9 @@ const App: Component = () => {
 			<ModalContainer />
 			<Routes>
 				<Route path="/" component={Home} />
-				<Route path="draw_tool" component={DrawTool} />
 				<Route path="route_viewer" component={RouteViewer} />
-				<Route path="opencvjs" component={OpencvJs} />
 				<Route path="/routes" component={RoutesTable} />
 				<Route path="/login" component={LoginPage} />
-				<Route path="/update_password" component={UpdatePasswordPage} />
-				<Route path="/forgot_password" component={ForgotPasswordPage} />
-				<Route path="/image_tracker" component={ImageTracker} />
 			</Routes>
 		</>
 	)
@@ -60,20 +48,20 @@ const Home: Component = () => {
 		const type = searchParams.type
 		console.log('token', tokenHash, 'email', email)
 		;(async () => {
-			const { error } = await SB.sb.auth.verifyOtp({
-				type: type as 'signup',
-				token_hash: tokenHash,
-			})
-			setSearchParams({
-				...searchParams,
-				token_hash: undefined,
-				email: undefined,
-				type: undefined,
-			})
-
-			if (error) {
-				alert(error.message)
-			}
+			// const { error } = await SB.sb.auth.verifyOtp({
+			// 	type: type as 'signup',
+			// 	token_hash: tokenHash,
+			// })
+			// setSearchParams({
+			// 	...searchParams,
+			// 	token_hash: undefined,
+			// 	email: undefined,
+			// 	type: undefined,
+			// })
+			//
+			// if (error) {
+			// 	alert(error.message)
+			// }
 		})()
 		return <Navigate href={'/update_password'} />
 	}

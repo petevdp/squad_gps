@@ -1,5 +1,9 @@
 lockfileVersion: '6.0'
 
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
 dependencies:
   '@solidjs/router':
     specifier: ^0.8.2
@@ -22,6 +26,9 @@ dependencies:
   leaflet:
     specifier: ^1.9.4
     version: 1.9.4
+  pocketbase:
+    specifier: ^0.20.3
+    version: 0.20.3
   solid-forms:
     specifier: ^0.4.8
     version: 0.4.8(solid-js@1.7.6)
@@ -2503,6 +2510,10 @@ packages:
     resolution: {integrity: sha512-saLsH7WeYYPiD25LDuLRRY/i+6HaPYr6G1OUlN39otzkSTxKnubR9RTxS3/Kk50s1g2JTgFwWQDQyplC5/SHZg==}
     engines: {node: '>= 6'}
 
+  /pocketbase@0.20.3:
+    resolution: { integrity: sha512-qembHhE7HumDBZpxWgFIbhJPeaCoUIdwhW59xF/VlMR79pDTYz/LaQ4q89y7GczKo4X9actFgFN8hs4dTl0spQ== }
+    dev: false
+
   /postcss-import@14.1.0(postcss@8.4.26):
     resolution: {integrity: sha512-flwI+Vgm4SElObFVPpTIT7SU7R3qk2L7PyduMcokiaVKuWv9d/U+Gm/QAd8NDLuykTWTkcrjOeD2Pp1rMeBTGw==}
     engines: {node: '>=10.0.0'}
@@ -3281,7 +3292,3 @@ packages:
     resolution: { integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q== }
     engines: { node: '>=10' }
     dev: true
-
-settings:
-  autoInstallPeers: true
-  excludeLinksFromLockfile: false

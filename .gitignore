@@ -22,3 +22,4 @@
 */cmake-build-debug/*
 /include/
 /cli_processor/
+/pocketbase/pb_data/
