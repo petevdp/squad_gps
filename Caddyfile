@@ -1,12 +1,13 @@
 http://localhost:2080
 
 @pocketbase {
+	# no idea if we can do this in a simpler way, but having two reverse proxy handlers doesn't appear to work
 	expression {path}.startsWith('/api') || {path}.startsWith('/_')
 }
 
-# @static {
-# 	not expression {path}.startsWith('/api') || {path}.startsWith('/_')
-# }
+handle @pocketbase {
+	reverse_proxy :8090
+}
 
 handle @pocketbase {
 	reverse_proxy :8090
@@ -17,4 +18,8 @@ handle * {
 	root * ./gui/dist
 	try_files {path} /index.html
 	file_server
+}
+
+log {
+	output file caddy.log
 }

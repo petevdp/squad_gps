@@ -3,12 +3,7 @@ import { render } from 'solid-js/web'
 import { Router } from '@solidjs/router'
 import './index.css'
 import 'tailwindcss/tailwind.css'
-import { logIn, pb } from './pocketbase'
 import App from './components/App'
-
-await logIn('pjvanderpol@gmail.com', 'asdf;lkj')
-
-const users = await pb.collection('users').getFullList()
 
 const root = document.getElementById('root')
 

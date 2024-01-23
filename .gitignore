@@ -10,8 +10,8 @@
 .vercel
 
 .idea/dataSources.xml
-/server/map_data/
-/server/downloads/
+/route_processor/map_data/
+/route_processor/downloads/
 /.idea/.name
 /.idea/squad_gps2.iml
 /downloads/273c7d54-75ca-4630-b8c6-69627deb0df9.mp4
