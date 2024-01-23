@@ -1,0 +1,20 @@
+http://localhost:2080
+
+@pocketbase {
+	expression {path}.startsWith('/api') || {path}.startsWith('/_')
+}
+
+# @static {
+# 	not expression {path}.startsWith('/api') || {path}.startsWith('/_')
+# }
+
+handle @pocketbase {
+	reverse_proxy :8090
+}
+
+handle * {
+	encode gzip
+	root * ./gui/dist
+	try_files {path} /index.html
+	file_server
+}
