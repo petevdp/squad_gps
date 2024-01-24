@@ -23,3 +23,5 @@
 /include/
 /cli_processor/
 /pocketbase/pb_data/
+
+caddy.log

@@ -28,7 +28,7 @@ export const Login: Component<LoginProps> = (props) => {
 		TE.initTE({ Select: TE.Select, Input: TE.Input })
 	})
 	const group = SF.createFormGroup({
-		email: SF.createFormControl('', { required: true }),
+		emailOrUsername: SF.createFormControl('', { required: true }),
 		password: SF.createFormControl('', { required: true }),
 	})
 
@@ -36,9 +36,9 @@ export const Login: Component<LoginProps> = (props) => {
 
 	async function onSubmit(e: SubmitEvent) {
 		e.preventDefault()
-		const _email = group.controls.email.value.trim()
+		const _emailOrUsername = group.controls.emailOrUsername.value.trim()
 		const _password = group.controls.password.value.trim()
-		const success = await PB.logIn(_email, _password)
+		const success = await PB.logIn(_emailOrUsername, _password)
 
 		if (success) {
 			props.onCompleted(true)
@@ -52,7 +52,7 @@ export const Login: Component<LoginProps> = (props) => {
 			<Show when={props.message}>
 				<p class="mb-2 text-red-300">{props.message}</p>
 			</Show>
-			<TextInput control={group.controls.email} label="Email" type="email" />
+			<TextInput control={group.controls.emailOrUsername} label="Email/Username" type="text" />
 			<TextInput control={group.controls.password} label="Password" type="password" />
 			<A href="/forgot_password" class="text-primary mb-2 self-end text-sm hover:underline">
 				Forgot password?

@@ -1,10 +1,10 @@
 FROM node:19
 RUN npm i -g pnpm
-RUN mkdir /client
-COPY ./gui/package.json ./gui/pnpm-lock.yaml /client/
+RUN mkdir /gui
+COPY ./gui/package.json ./gui/pnpm-lock.yaml /gui/
 WORKDIR /client
 RUN pnpm install
-COPY ./gui /client
+COPY ./gui/ /gui
 RUN pnpm run build
 
 FROM python:3.11.1
@@ -25,5 +25,6 @@ COPY Caddyfile /Caddyfile
 COPY pocketbase /pocketbase
 COPY caddy /caddy
 
-CMD ["./caddy", "run", "--config", "/Caddyfile"]
-CMD ["python3", "-m", "pocketbase"]
+COPY startup.sh /startup.sh
+
+CMD ["/startup.sh"]

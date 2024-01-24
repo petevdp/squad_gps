@@ -1,5 +1,5 @@
 ./pocketbase/pocketbase serve &
 ./caddy/caddy run &
-cd ./server || exit
+cd ./route_processor || exit
 poetry run python main.py
 cd ..

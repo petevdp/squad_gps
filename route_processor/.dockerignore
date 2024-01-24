@@ -1,2 +1,5 @@
 map_data
 downloads
+**/node_modules
+**.env
+**/pb_data
