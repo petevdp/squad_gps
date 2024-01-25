@@ -9,10 +9,6 @@ handle @pocketbase {
 	reverse_proxy :8090
 }
 
-handle @pocketbase {
-	reverse_proxy :8090
-}
-
 handle * {
 	encode gzip
 	root * ./gui/dist
