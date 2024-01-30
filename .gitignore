@@ -25,3 +25,5 @@
 /pocketbase/pb_data/
 
 caddy.log
+
+*/__pycache__/
